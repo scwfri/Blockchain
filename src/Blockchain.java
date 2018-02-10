@@ -43,7 +43,6 @@ class BlockchainNode {
         new Thread(unverifiedBlockConsumer).start();
     }
 
-
     private void setPid(int pnum) {
         pid = pnum;
     }
@@ -104,10 +103,10 @@ class UnverifiedBlockServer implements Runnable {
         //run method
         System.out.println("hello from unverifiedBlockServer");
         // read data in from text file
-
+        BufferedReader fr = new BufferedReader(NewFileReader());
     }
 
-    class UnverifiedBlockWokrker implements Runnable {
+    class UnverifiedBlockWorker implements Runnable {
 
         public void run() {
             //run method
