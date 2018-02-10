@@ -27,6 +27,16 @@ class BlockchainNode {
         unverifiedBlockClient = new UnverifiedBlockClient();
         blockchainStack = new Stack<Blockchain>();
     }
+
+    public static void main(String[] args) {
+        int q_len = 6; // queue length
+        BlockchainNode b = new BlockchainNode();
+        b.setPid((args.length < 1) ? 0 : Integer.parseInt(args[0]));
+    }
+
+    private void setPid(int pnum) {
+        pid = pnum;
+    }
 }
 
 class Blockchain {
