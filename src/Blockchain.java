@@ -11,10 +11,19 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
 
+class Blockchain {
+    public static void main(String[] args) {
+        int q_len = 6; // queue length
+        int pid = (args.length < 1) ? 0 : Integer.parseInt(args[0]);
+        new BlockchainNode(pid);
+        System.out.println("Scott Friedrich's blockchain framework.");
+        System.out.println("Using processID: " + pid + "\n");
+    }
+}
 
 class BlockchainNode {
     private UnverifiedBlockClient unverifiedBlockClient; // client to do "work"
-    private Stack<Blockchain> blockchainStack; // stack to store full blockchain
+    private Stack<BlockchainBlock> blockchainStack; // stack to store full blockchain
     private BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
     private int privateKey; // private key for server
     private int pid;
@@ -22,29 +31,31 @@ class BlockchainNode {
     private int unverifiedBlockServerPort;
     private int publicKeyServerPort;
 
-    BlockchainNode() {
+    BlockchainNode(int pid) {
         // privateKey = Keys.getInstance.getPrivateKey();
         unverifiedBlockClient = new UnverifiedBlockClient();
-        blockchainStack = new Stack<Blockchain>();
+        blockchainStack = new Stack<BlockchainBlock>();
+
+        // intialize threads
+        new Thread(unverifiedBlockClient).start();
     }
 
-    public static void main(String[] args) {
-        int q_len = 6; // queue length
-        BlockchainNode b = new BlockchainNode();
-        b.setPid((args.length < 1) ? 0 : Integer.parseInt(args[0]));
-    }
 
     private void setPid(int pnum) {
         pid = pnum;
     }
+
+    private int getPid() {
+        return pid;
+    }
 }
 
-class Blockchain {
+class BlockchainBlock {
     private String previousBlockHash;
     private String currentBlockHash;
     private String currentBlockContents;
 
-    Blockchain(String prevHash, String newBlockHash, String newBlockContents) {
+    BlockchainBlock(String prevHash, String newBlockHash, String newBlockContents) {
         previousBlockHash = prevHash;
         currentBlockHash = newBlockHash;
         currentBlockContents = newBlockContents;
@@ -80,8 +91,12 @@ class BlockchainNodeList {
     }
 }
 
-class UnverifiedBlockClient {
-
+class UnverifiedBlockClient implements Runnable {
+    
+    public void run() {
+        //run method
+        System.out.println("hello from unverified block client");
+    }
 }
 
 class Keys {
@@ -100,5 +115,4 @@ class Keys {
         }
         return instance;
     }
-
 }
