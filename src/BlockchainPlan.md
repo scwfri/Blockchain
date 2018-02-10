@@ -3,14 +3,16 @@
 - BlockchainNode class created
     - each BlockchainNode class is a "node" or "
     - each BlockchainNode class will own:
-        - UnverifiedBlockClient
+        - UnverifiedBlockServer
             - reads in data from file (perhaps on loop????)
             - when new data received:
-                - sends to UnverifiedBlockWorker
-                - tell owner BlockchianNodeList class to multicast to everyone
+                - create new unverifiedBlockWorker to process
             - UnverifiedBlockWorker (subclass of UnverifiedBlockClient)
-                - does "work" on block to verify
-                - once verified, tells owner blockchain class to multicast to everyone
+                - read in new unverified block
+                - tell owner BlockchianNodeList class to multicast to everyone
+                - starts new UnverifiedBlockConsumer process
+                    - does "work" on block to verify
+                    - once verified, tells owner blockchain class to multicast to everyone
         - Blockchain instance
                 - copy of current blockchain
                 - process 0 is responsible for writing to disk
