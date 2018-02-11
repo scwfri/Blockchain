@@ -231,11 +231,13 @@ class UnverifiedBlock {
 
 class CreateXml {
     // class to parse and create XML
+    private static ParseText pt;
     public CreateXml(String input) {
-        create(input);
+        pt = new ParseText(input);
+        create();
     }
 
-    private static void create(String input) {
+    private static void create() {
         try {
             BlockchainBlock block = new BlockchainBlock();
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
@@ -247,11 +249,46 @@ class CreateXml {
             block.setSignedSHA256("signed sha string");
             String sUUID = new String(UUID.randomUUID().toString());
 
+            block.setFirstName(pt.firstName);
+            block.setLastName(pt.lastName);
+            block.setDob(pt.dob);
+            block.setSsNum(pt.ssNum);
+            block.setDiagnosis(pt.diagnosis);
+            block.setTreatment(pt.treatment);
+            block.setPrescription(pt.prescription);
+
             marshaller.marshal(block, sw);
             System.out.println("marshalled: " + sw.toString());
         } catch (Exception ex) {
             System.out.println("CreateXml exception");
             System.out.println(ex);
+        }
+    }
+
+    class ParseText {
+        private String firstName;
+        private String lastName;
+        private String dob;
+        private String ssNum;
+        private String diagnosis;
+        private String treatment;
+        private String prescription;
+
+        private ParseText(String input) {
+            int stringPointer = 0;
+            firstName = input.substring(stringPointer, input.indexOf(" "));
+            stringPointer = input.indexOf(" ", stringPointer + 1);
+            lastName = input.substring(stringPointer, input.indexOf(" ", stringPointer   + 1));
+            stringPointer = input.indexOf(" ", stringPointer + 1);
+            dob = input.substring(stringPointer, input.indexOf(" ", stringPointer   + 1));
+            stringPointer = input.indexOf(" ", stringPointer + 1);
+            ssNum = input.substring(stringPointer, input.indexOf(" ", stringPointer   + 1));
+            stringPointer = input.indexOf(" ", stringPointer + 1);
+            diagnosis = input.substring(stringPointer, input.indexOf(" ", stringPointer   + 1));
+            stringPointer = input.indexOf(" ", stringPointer + 1);
+            treatment = input.substring(stringPointer, input.indexOf(" ", stringPointer   + 1));
+            stringPointer = input.indexOf(" ", stringPointer + 1);
+            prescription = input.substring(stringPointer);
         }
     }
 }
