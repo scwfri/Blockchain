@@ -56,6 +56,7 @@ class BlockchainBlock {
     private String previousBlockHash;
     private String currentBlockHash;
     private String currentBlockContents;
+    private String randSolution;
 
     BlockchainBlock(String prevHash, String newBlockHash, String newBlockContents) {
         previousBlockHash = prevHash;
@@ -103,7 +104,12 @@ class UnverifiedBlockServer implements Runnable {
         //run method
         System.out.println("hello from unverifiedBlockServer");
         // read data in from text file
-        BufferedReader fr = new BufferedReader(NewFileReader());
+        try {
+            BufferedReader fr = new BufferedReader(new FileReader("./BlockInput0.txt"));
+
+        } catch (IOEXception ex) {
+            System.out.println("File not found.");
+        }
     }
 
     class UnverifiedBlockWorker implements Runnable {
