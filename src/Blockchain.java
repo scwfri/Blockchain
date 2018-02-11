@@ -11,6 +11,16 @@ import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
 
+// XML libraries
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 class Blockchain {
     public static void main(String[] args) {
         int q_len = 6; // queue length
@@ -69,21 +79,147 @@ class BlockchainNode {
     }
 }
 
+@XmlRootElement
 class BlockchainBlock {
-    private String previousBlockHash;
-    private String currentBlockHash;
-    private String currentBlockContents;
-    private String randSolution;
+    private String SHA256String;
+    private String signedSHA256;
+    private String blockId;
+    private String verificationProcessId;
+    private String creatingProcessId;
+    private String prevHash;
+    private String firstName;
+    private String lastName;
+    private String dob;
+    private String ssNum;
+    private String diagnosis;
+    private String treatment;
+    private String prescription;
 
-    BlockchainBlock(String prevHash, String newBlockHash, String newBlockContents) {
-        previousBlockHash = prevHash;
-        currentBlockHash = newBlockHash;
-        currentBlockContents = newBlockContents;
+    public String getSHA256String() {
+        return SHA256String;
     }
+
+    @XmlElement
+    public void setSHA256String(String sHA256String) {
+        SHA256String = sHA256String;
+    }
+
+    public String getSignedSHA256() {
+        return signedSHA256;
+    }
+
+    @XmlElement
+    public void setSignedSHA256(String signedSHA256) {
+        this.signedSHA256 = signedSHA256;
+    }
+
+    public String getBlockId() {
+        return blockId;
+    }
+
+    @XmlElement
+    public void setBlockId(String blockId) {
+        this.blockId = blockId;
+    }
+
+    public String getVerificationProcessId() {
+        return verificationProcessId;
+    }
+
+    @XmlElement
+    public void setVerificationProcessId(String verificationProcessId) {
+        this.verificationProcessId = verificationProcessId;
+    }
+
+    public String getCreatingProcessId() {
+        return creatingProcessId;
+    }
+
+    @XmlElement
+    public void setCreatingProcessId(String creatingProcessId) {
+        this.creatingProcessId = creatingProcessId;
+    }
+
+    public String getPrevHash() {
+        return prevHash;
+    }
+
+    @XmlElement
+    public void setPrevHash(String prevHash) {
+        this.prevHash = prevHash;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    @XmlElement
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    @XmlElement
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getDob() {
+        return dob;
+    }
+
+    @XmlElement
+    public void setDob(String dob) {
+        this.dob = dob;
+    }
+
+    public String getSsNum() {
+        return ssNum;
+    }
+
+    @XmlElement
+    public void setSsNum(String ssNum) {
+        this.ssNum = ssNum;
+    }
+
+    public String getDiagnosis() {
+        return diagnosis;
+    }
+
+    @XmlElement
+    public void setDiagnosis(String diagnosis) {
+        this.diagnosis = diagnosis;
+    }
+
+    public String getTreatment() {
+        return treatment;
+    }
+
+    @XmlElement
+    public void setTreatment(String treatment) {
+        this.treatment = treatment;
+    }
+
+    public String getPrescription() {
+        return prescription;
+    }
+
+    @XmlElement
+    public void setPrescription(String prescription) {
+        this.prescription = prescription;
+    }
+
 }
 
 class UnverifiedBlock {
     // create new XML representation of unverified block, return to BlockchainNodeMulticast
+}
+
+class CreateXml {
+    // class to parse and create XML
 }
 
 class BlockchainNodeMulticast {
