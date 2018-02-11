@@ -26,7 +26,6 @@ class BlockchainNode {
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private Stack<BlockchainBlock> blockchainStack; // stack to store full blockchain
-    private BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
     private int numProcesses = 3; // number of processes
     private int privateKey; // private key for server
     private int pid;
@@ -81,6 +80,10 @@ class BlockchainBlock {
         currentBlockHash = newBlockHash;
         currentBlockContents = newBlockContents;
     }
+}
+
+class UnverifiedBlock {
+    // create new XML representation of unverified block, return to BlockchainNodeMulticast
 }
 
 class BlockchainNodeMulticast {
@@ -150,7 +153,8 @@ class UnverifiedBlockServer implements Runnable {
             String input = "";
             String file = "./BlockInput" + pid + ".txt";
             Thread.sleep(5);
-            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+            BufferedReader userInput;
+            userInput = new BufferedReader(new InputStreamReader(System.in));
             System.out.println("Enter R to read file> ");
             input = userInput.readLine();
             if (input.equals("R")) {
@@ -172,11 +176,13 @@ class UnverifiedBlockConsumer implements Runnable {
     // SERVER
     // class to do "work" on new block
     private int port;
-    Socket sock;
+    private Socket sock;
     int q_len = 6;
+    private static BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
 
     UnverifiedBlockConsumer(int p) {
         port = p;
+        unverifiedQueue = new PriorityBlockingQueue<>();
         System.out.println("starting unverified block consumer");
     }
 
@@ -187,8 +193,10 @@ class UnverifiedBlockConsumer implements Runnable {
             System.out.println("unverified block consumer port: " + port);
             ServerSocket servSock = new ServerSocket(port, q_len);
             while (true) {
+                // infinite loop- keep waiting for multicast client to connect
                 sock = servSock.accept(); // blocks
-                new Thread(new UnverifiedBlockWorker(sock)).start();
+                // once connected, spawn unverifiedblockworker thread to handle
+                new Thread(new UnverifiedBlockWorker(sock, unverifiedQueue)).start();
             }
         } catch (IOException ex) {
             System.out.println(ex);
@@ -197,20 +205,30 @@ class UnverifiedBlockConsumer implements Runnable {
 
     class UnverifiedBlockWorker implements Runnable {
         Socket sock;
+        private BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
 
-        public UnverifiedBlockWorker(Socket s) {
+        public UnverifiedBlockWorker(Socket s, BlockingQueue<String> queue) {
             sock = s;
+            unverifiedQueue = queue;
         }
 
         public void run() {
             try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = "";
+                // get the next block from multicast
                 input = in.readLine();
+                // add to queue
+                unverifiedQueue.add(input);
+                printQueue();
                 System.out.println("unverified block worker: " + input);
             } catch (IOException ex) {
                 System.out.println(ex);
             }
+        }
+
+        private void printQueue(){
+            System.out.println(unverifiedQueue.toString());
         }
     }
 }
