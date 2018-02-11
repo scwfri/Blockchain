@@ -155,14 +155,16 @@ class UnverifiedBlockServer implements Runnable {
             Thread.sleep(5);
             BufferedReader userInput;
             userInput = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter R to read file> ");
-            input = userInput.readLine();
-            if (input.equals("R")) {
-                BufferedReader fr = new BufferedReader(new FileReader(file));
-                String line = fr.readLine();
-                sb.append(line);
-                new BlockchainNodeMulticast(line.toString());
-            }
+            System.out.println("Enter R to read file, q to quit> ");
+            BufferedReader fr = new BufferedReader(new FileReader(file));
+            do {
+                input = userInput.readLine();
+                if (input.equals("R")) {
+                    String line = fr.readLine();
+                    sb.append(line);
+                    new BlockchainNodeMulticast(line.toString());
+                }
+            } while (input.indexOf("quit") == -1);
         } catch (IOException ex) {
             System.out.println("File not found.");
         } catch (Exception e) {
