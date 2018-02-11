@@ -19,12 +19,6 @@ class Blockchain {
         new BlockchainNode(pid);
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
-
-        try {
-            Thread.sleep(10);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 }
 
@@ -45,7 +39,7 @@ class BlockchainNode {
         setPid(pid);
 
         // privateKey = Keys.getInstance.getPrivateKey();
-        unverifiedBlockServer = new UnverifiedBlockServer();
+        unverifiedBlockServer = new UnverifiedBlockServer(pid);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid));
         blockchainStack = new Stack<>();
 
@@ -141,6 +135,11 @@ class UnverifiedBlockServer implements Runnable {
     // tell BlockchainNodeList class to multicast to everyone
     // UnverifiedBlockWorker does "work" on new block
     // once verified, UnverifiedBlockWorker tells BlockChainNodeList to multicast
+    private int pid;
+
+    public UnverifiedBlockServer(int p) {
+        pid = p;
+    }
 
     public void run() {
         //run method
@@ -148,12 +147,16 @@ class UnverifiedBlockServer implements Runnable {
         // read data in from text file
         StringBuilder sb = new StringBuilder();
         try {
-            BufferedReader fr = new BufferedReader(new FileReader("./BlockInput0.txt"));
+            String file = "./BlockInput" + pid + ".txt";
+            Thread.sleep(5);
+            BufferedReader fr = new BufferedReader(new FileReader(file));
             String line = fr.readLine();
             sb.append(line);
             new BlockchainNodeMulticast(line.toString());
         } catch (IOException ex) {
             System.out.println("File not found.");
+        } catch (Exception e) {
+            System.out.println("interruped exception " + e);
         }
     }
 
