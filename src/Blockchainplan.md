@@ -172,8 +172,4 @@ nonce- number you set to hash to match hash with requirements
 ## Concurrent priority queue
 
 - want unverified blocks in order inside queue
-- explain in comments how you are solving multiple update problem
-
-## console commands
-
-- use console commands to read file, etc
+-
