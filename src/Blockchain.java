@@ -231,9 +231,24 @@ class UnverifiedBlock {
 
 class CreateXml {
     // class to parse and create XML
-    public CreateXml() {
+    public CreateXml(String input) {
+        create(input);
+    }
+
+    private static void create(String input) {
         try {
+            BlockchainBlock block = new BlockchainBlock();
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+            Marshaller marshaller = jaxbContext.createMarshaller();
+            StringWriter sw = new StringWriter();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+            block.setSHA256String("SHA string");
+            block.setSignedSHA256("signed sha string");
+            String sUUID = new String(UUID.randomUUID().toString());
+
+            marshaller.marshal(block, sw);
+            System.out.println("marshalled: " + sw.toString());
         } catch (Exception ex) {
             System.out.println("CreateXml exception");
             System.out.println(ex);
@@ -266,6 +281,7 @@ class BlockchainNodeMulticast {
 
         private MulticastWorker(String input) {
             message = input;
+            new CreateXml(input);
         }
 
         public void run() {
