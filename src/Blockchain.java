@@ -172,7 +172,7 @@ class UnverifiedBlockConsumer implements Runnable {
         }
     }
 
-    class UnverifiedBlockWorker {
+    class UnverifiedBlockWorker implements Runnable {
         Socket sock;
 
         public UnverifiedBlockWorker(Socket s) {
