@@ -14,7 +14,8 @@ import java.util.concurrent.*;
 class Blockchain {
     public static void main(String[] args) {
         int q_len = 6; // queue length
-        int pid = (args.length < 1) ? 0 : Integer.parseInt(args[0]);
+        int pid = ((args.length < 1) ? 0 : Integer.parseInt(args[0]));
+        System.out.println("pid: " + pid);
         new BlockchainNode(pid);
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
@@ -32,7 +33,7 @@ class BlockchainNode {
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private Stack<BlockchainBlock> blockchainStack; // stack to store full blockchain
     private BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
-    private int numProcesses = 1; // number of processes
+    private int numProcesses = 3; // number of processes
     private int privateKey; // private key for server
     private int pid;
     private int updatedBlockchainPort;
@@ -55,6 +56,8 @@ class BlockchainNode {
         // get port numbers
         setPorts();
 
+        // tell BlockchainNodeMulticast the number of processes
+        BlockchainNodeMulticast.setNumProcesses(numProcesses);
     }
 
     private void setPorts() {
@@ -90,7 +93,7 @@ class BlockchainNodeMulticast {
     // CLIENT
     // singleton
     // multicast for all blockchain nodes
-    private int numProcesses = 1;
+    private static int numProcesses;
     private String serverName = "localhost";
     private int q_len = 6;
     private String newBlock;
@@ -100,9 +103,14 @@ class BlockchainNodeMulticast {
         new Thread(new MulticastWorker(input)).start();
     }
 
+    public static void setNumProcesses(int num) {
+        numProcesses = num;
+    }
+
     class MulticastWorker implements Runnable {
         private String message;
         private Socket sock;
+        private int port;
 
         private MulticastWorker(String input) {
             message = input;
@@ -110,17 +118,22 @@ class BlockchainNodeMulticast {
 
         public void run() {
             try {
-                sock = new Socket(serverName, 4080);
-                PrintStream out = new PrintStream(sock.getOutputStream());
-                out.println("test");
-                sock.close();
+                for (int i = 0; i < numProcesses; i++) {
+                    // multicast to all blockchain servers
+                    port = Ports.getInstance().getUnverifiedBlockPort(i);
+                    System.out.println("multicastworker port = " + port);
+                    System.out.println("num processes: " + numProcesses);
+                    sock = new Socket(serverName, port);
+                    PrintStream out = new PrintStream(sock.getOutputStream());
+                    out.println(message);
+                    sock.close();
+                }
             } catch (IOException ex) {
                 System.out.println("multicast worker error");
                 System.out.println(ex);
             }
         }
     }
-
 }
 
 class UnverifiedBlockServer implements Runnable {
@@ -138,7 +151,7 @@ class UnverifiedBlockServer implements Runnable {
             BufferedReader fr = new BufferedReader(new FileReader("./BlockInput0.txt"));
             String line = fr.readLine();
             sb.append(line);
-            new BlockchainNodeMulticast(line);
+            new BlockchainNodeMulticast(line.toString());
         } catch (IOException ex) {
             System.out.println("File not found.");
         }
@@ -162,7 +175,8 @@ class UnverifiedBlockConsumer implements Runnable {
         // run method
         // do work in this thread
         try {
-            ServerSocket servSock = new ServerSocket(4080, q_len);
+            System.out.println("unverified block consumer port: " + port);
+            ServerSocket servSock = new ServerSocket(port, q_len);
             while (true) {
                 sock = servSock.accept(); // blocks
                 new Thread(new UnverifiedBlockWorker(sock)).start();

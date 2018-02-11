@@ -1,4 +1,3 @@
-
 John Smith 1996.03.07 123-45-6789 Chickenpox BedRest aspirin
 Joe  Blow  1996.03.07 123-45-6888 Smallpox BedRest Whiskey
 Julie Wilson 1996.03.07 123-45-6999 Insomnia Exercise HotPeppers
