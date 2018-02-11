@@ -247,7 +247,7 @@ class CreateXml {
 
             block.setSHA256String("SHA string");
             block.setSignedSHA256("signed sha string");
-            String sUUID = new String(UUID.randomUUID().toString());
+            block.setBlockId(new String(UUID.randomUUID().toString()));
 
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
