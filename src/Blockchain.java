@@ -104,10 +104,13 @@ class UnverifiedBlockServer implements Runnable {
         //run method
         System.out.println("hello from unverifiedBlockServer");
         // read data in from text file
+        StringBuilder sb = new StringBuilder();
         try {
             BufferedReader fr = new BufferedReader(new FileReader("./BlockInput0.txt"));
-
-        } catch (IOEXception ex) {
+            String line = fr.readLine();
+            sb.append(line);
+            System.out.println(sb.toString());
+        } catch (IOException ex) {
             System.out.println("File not found.");
         }
     }
