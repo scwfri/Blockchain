@@ -4,6 +4,17 @@
 * Usage (in different shell window):
 * Files needed to run:
 *   - Blockchain.java
+*
+*
+* web sources:
+*  Reading lines and tokens from a file:
+*  http://www.fredosaurus.com/notes-java/data/strings/96string_examples/example_stringToArray.html
+*
+*  XML validator:
+*  https://www.w3schools.com/xml/xml_validator.asp
+*
+*  XML / Object conversion:
+*  https://www.mkyong.com/java/jaxb-hello-world-example/
 ----------------------------------------------------------*/
 
 import java.util.*;
@@ -220,6 +231,14 @@ class UnverifiedBlock {
 
 class CreateXml {
     // class to parse and create XML
+    public CreateXml() {
+        try {
+            JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+        } catch (Exception ex) {
+            System.out.println("CreateXml exception");
+            System.out.println(ex);
+        }
+    }
 }
 
 class BlockchainNodeMulticast {
