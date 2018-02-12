@@ -248,7 +248,6 @@ class CreateXml {
             block.setSHA256String("SHA string");
             block.setSignedSHA256("signed sha string");
             block.setBlockId(new String(UUID.randomUUID().toString()));
-
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
             block.setDob(pt.dob);
@@ -256,7 +255,6 @@ class CreateXml {
             block.setDiagnosis(pt.diagnosis);
             block.setTreatment(pt.treatment);
             block.setPrescription(pt.prescription);
-
             marshaller.marshal(block, sw);
             System.out.println("marshalled: " + sw.toString());
             return sw.toString();
@@ -303,6 +301,7 @@ class BlockchainNodeMulticast {
     private String serverName = "localhost";
     private int q_len = 6;
     private String newBlock;
+    private String xml;
 
     public BlockchainNodeMulticast(String input) {
         newBlock = input;
@@ -321,7 +320,7 @@ class BlockchainNodeMulticast {
         private MulticastWorker(String input) {
             message = input;
             CreateXml createXml = new CreateXml();
-            String xml = createXml.create(input);
+            xml = createXml.create(input);
         }
 
         public void run() {
@@ -333,7 +332,7 @@ class BlockchainNodeMulticast {
                     System.out.println("num processes: " + numProcesses);
                     sock = new Socket(serverName, port);
                     PrintStream out = new PrintStream(sock.getOutputStream());
-                    out.println(message);
+                    out.println(xml);
                     sock.close();
                 }
             } catch (IOException ex) {
@@ -429,10 +428,14 @@ class UnverifiedBlockConsumer implements Runnable {
             try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = "";
+                StringBuilder sb = new StringBuilder();
+                do {
+                    input = in.readLine();
+                    sb.append(input);
+                } while (input != null);
                 // get the next block from multicast
-                input = in.readLine();
                 // add to queue
-                unverifiedQueue.add(input);
+                unverifiedQueue.add(sb.toString());
                 printQueue();
                 System.out.println("unverified block worker: " + input);
             } catch (IOException ex) {
