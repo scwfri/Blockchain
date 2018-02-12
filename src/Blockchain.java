@@ -242,10 +242,6 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
 
 }
 
-class UnverifiedBlock {
-    // create new XML representation of unverified block, return to BlockchainNodeMulticast
-}
-
 class CreateXml {
     // class to parse and create XML
     private static ParseText pt;
@@ -262,8 +258,8 @@ class CreateXml {
             StringWriter sw = new StringWriter();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
-            block.setSHA256String("SHA string");
-            block.setSignedSHA256("signed sha string");
+            block.setSHA256String(null);
+            block.setSignedSHA256(null);
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
