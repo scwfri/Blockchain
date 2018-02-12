@@ -507,7 +507,10 @@ class UnverifiedBlockConsumer implements Runnable {
                 // generate random string to attempt to solve
                 randomString = new String(UUID.randomUUID().toString());
                 String newBlockData = newBlock.toString();
-                String prevBlockHash; // TODO: figure out where to store prev block hash
+                StringBuilder sb = new StringBuilder();
+                // TODO: hash and check value
+                // TODO: hash and check if last 3 bits are "0"
+                String resHash= "";
             }
         }
 
