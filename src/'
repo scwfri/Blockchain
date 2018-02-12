@@ -232,12 +232,13 @@ class UnverifiedBlock {
 class CreateXml {
     // class to parse and create XML
     private static ParseText pt;
-
-    public CreateXml() {
+    public CreateXml(String input) {
+        pt = new ParseText(input);
+        String xml = create();
+        reuturn xml;
     }
 
-    public String create(String input) {
-        pt = new ParseText(input);
+    private static String create() {
         try {
             BlockchainBlock block = new BlockchainBlock();
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
@@ -263,7 +264,6 @@ class CreateXml {
         } catch (Exception ex) {
             System.out.println("CreateXml exception");
             System.out.println(ex);
-            return "";
         }
     }
 
@@ -320,8 +320,7 @@ class BlockchainNodeMulticast {
 
         private MulticastWorker(String input) {
             message = input;
-            CreateXml createXml = new CreateXml();
-            String xml = createXml.create(input);
+            new CreateXml(input);
         }
 
         public void run() {

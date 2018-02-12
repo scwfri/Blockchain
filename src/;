@@ -263,7 +263,6 @@ class CreateXml {
         } catch (Exception ex) {
             System.out.println("CreateXml exception");
             System.out.println(ex);
-            return "";
         }
     }
 
