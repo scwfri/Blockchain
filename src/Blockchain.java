@@ -258,6 +258,7 @@ class CreateXml {
             StringWriter sw = new StringWriter();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
+            // null string and null signed SHA-256 show this is unverified block
             block.setSHA256String(null);
             block.setSignedSHA256(null);
             block.setBlockId(new String(UUID.randomUUID().toString()));
