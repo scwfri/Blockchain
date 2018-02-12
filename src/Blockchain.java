@@ -92,8 +92,9 @@ class BlockchainNode {
 
 @XmlRootElement
 class BlockchainBlock implements Comparable<BlockchainBlock> {
-    private String SHA256String;
+    private String previousBlockHash;
     private String signedSHA256;
+    private String randomString;
     private String blockId;
     private String verificationProcessId;
     private String creatingProcessId;
@@ -114,13 +115,13 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
         }
     }
 
-    public String getSHA256String() {
-        return SHA256String;
+    public String getPreviousBlockHash() {
+        return previousBlockHash;
     }
 
     @XmlElement
-    public void setSHA256String(String sHA256String) {
-        SHA256String = sHA256String;
+    public void setPreviousBlockHash(String prevBlockHash) {
+        previousBlockHash = prevBlockHash;
     }
 
     public String getSignedSHA256() {
@@ -130,6 +131,15 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
     @XmlElement
     public void setSignedSHA256(String signedSHA256) {
         this.signedSHA256 = signedSHA256;
+    }
+
+    public String getRandomString() {
+        return randomString;
+    }
+
+    @XmlElement
+    public void setRandomString(String randomString) {
+        this.randomString = randomString;
     }
 
     public String getBlockId() {
@@ -233,7 +243,7 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
 
     @Override
     public String toString() {
-        return "BlockchainBlock [SHA256String=" + SHA256String + ", signedSHA256=" + signedSHA256 + ", blockId="
+        return "BlockchainBlock [PreviousBlockHash=" + previousBlockHash + ", signedSHA256=" + signedSHA256 + ", RandomString=" + randomString + ", blockId="
                 + blockId + ", verificationProcessId=" + verificationProcessId + ", creatingProcessId="
                 + creatingProcessId + ", prevHash=" + prevHash + ", firstName=" + firstName + ", lastName=" + lastName
                 + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
@@ -259,8 +269,9 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            block.setSHA256String(null);
+            block.setPreviousBlockHash(null);
             block.setSignedSHA256(null);
+            block.setRandomString(null);
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
@@ -454,13 +465,28 @@ class UnverifiedBlockConsumer implements Runnable {
                 StringReader reader = new StringReader(sb.toString());
                 JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-                BlockchainBlock unverified = (BlockchainBlock) unmarshaller.unmarshal(reader);
+                BlockchainBlock newBlock = (BlockchainBlock) unmarshaller.unmarshal(reader);
 
                 //PrintStream out = new PrintStream(new FileOutputStream("./xmlExample.xml"));
                 //out.print(sb.toString());
                 reader.close();
 
-                unverifiedQueue.add(unverified);
+                // add to unverifiedBlockQueue
+                if (newBlock.getSignedSHA256() == null) {
+                    // if null SHA-256 string (i.e. block not solved yet)
+                    // add to unverified queue
+                    unverifiedQueue.add(newBlock);
+                    solve(newBlock);
+                } else {
+                    // block has been completed
+                    // so remove from unverified queue
+                    unverifiedQueue.remove(newBlock);
+                    // and add to Blockchain
+                    // TODO: Add to blockchain
+                    // TODO: verify new block?
+                    // TODO: stop work on block
+                }
+
                 printQueue();
                 System.out.println("unverified block worker: " + sb.toString());
             } catch (IOException ex) {
@@ -468,6 +494,20 @@ class UnverifiedBlockConsumer implements Runnable {
             } catch (JAXBException e) {
                 System.out.println("JAXB exception");
                 System.out.println(e);
+            }
+        }
+
+        private void solve(BlockchainBlock newBlock) {
+            // TODO: do work to solve puzzle
+            // TODO: multicast updated block (will add to blockchain)
+            String randomString;
+
+            // TODO; change to "while unverified"
+            while (true) {
+                // generate random string to attempt to solve
+                randomString = new String(UUID.randomUUID().toString());
+                String newBlockData = newBlock.toString();
+                String prevBlockHash; // TODO: figure out where to store prev block hash
             }
         }
 
