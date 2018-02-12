@@ -60,7 +60,7 @@ class BlockchainNode {
 
         // privateKey = Keys.getInstance.getPrivateKey();
         unverifiedBlockServer = new UnverifiedBlockServer(pid);
-        unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid));
+        unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         blockchainStack = new Stack<>();
 
         // intialize threads
@@ -72,6 +72,11 @@ class BlockchainNode {
 
         // tell BlockchainNodeMulticast the number of processes
         BlockchainNodeMulticast.setNumProcesses(numProcesses);
+    }
+
+    public void addBlockchainBlock(BlockchainBlock bcBlock) {
+        blockchainStack.push(bcBlock);
+        System.out.println("BlockchainStack:" + blockchainStack.toString());
     }
 
     private void setPorts() {
@@ -269,9 +274,10 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            block.setPreviousBlockHash(null);
-            block.setSignedSHA256(null);
-            block.setRandomString(null);
+            // TODO: do we need to set these 3?
+            //block.setPreviousBlockHash(null);
+            //block.setSignedSHA256(null);
+            //block.setRandomString(null);
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
@@ -416,11 +422,13 @@ class UnverifiedBlockConsumer implements Runnable {
     private Socket sock;
     int q_len = 6;
     private static BlockingQueue<BlockchainBlock> unverifiedQueue; // queue of unverified blocks
+    private BlockchainNode blockchainNode;
 
-    UnverifiedBlockConsumer(int p) {
+    UnverifiedBlockConsumer(int p, BlockchainNode bcNode) {
         port = p;
         unverifiedQueue = new PriorityBlockingQueue<>();
         System.out.println("starting unverified block consumer");
+        blockchainNode = bcNode;
     }
 
     public void run() {
@@ -501,17 +509,24 @@ class UnverifiedBlockConsumer implements Runnable {
             // TODO: do work to solve puzzle
             // TODO: multicast updated block (will add to blockchain)
             String randomString;
+            Boolean bool = true;
 
             // TODO; change to "while unverified"
-            while (true) {
+
+            while (bool) {
                 // generate random string to attempt to solve
                 randomString = new String(UUID.randomUUID().toString());
                 String newBlockData = newBlock.toString();
                 StringBuilder sb = new StringBuilder();
+                sb.append(newBlockData);
+                sb.append(randomString);
                 // TODO: hash and check value
                 // TODO: hash and check if last 3 bits are "0"
                 String resHash= "";
+                bool = false;
             }
+
+            blockchainNode.addBlockchainBlock(newBlock);
         }
 
         private void printQueue(){
