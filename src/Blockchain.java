@@ -91,7 +91,7 @@ class BlockchainNode {
 }
 
 @XmlRootElement
-class BlockchainBlock {
+class BlockchainBlock implements Comparable<BlockchainBlock> {
     private String SHA256String;
     private String signedSHA256;
     private String blockId;
@@ -105,6 +105,14 @@ class BlockchainBlock {
     private String diagnosis;
     private String treatment;
     private String prescription;
+
+    public int compareTo(BlockchainBlock other) {
+        if (this.blockId.equals(other.blockId) == true) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
 
     public String getSHA256String() {
         return SHA256String;
@@ -221,6 +229,15 @@ class BlockchainBlock {
     @XmlElement
     public void setPrescription(String prescription) {
         this.prescription = prescription;
+    }
+
+    @Override
+    public String toString() {
+        return "BlockchainBlock [SHA256String=" + SHA256String + ", signedSHA256=" + signedSHA256 + ", blockId="
+                + blockId + ", verificationProcessId=" + verificationProcessId + ", creatingProcessId="
+                + creatingProcessId + ", prevHash=" + prevHash + ", firstName=" + firstName + ", lastName=" + lastName
+                + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
+                + ", prescription=" + prescription + "]";
     }
 
 }
@@ -390,7 +407,7 @@ class UnverifiedBlockConsumer implements Runnable {
     private int port;
     private Socket sock;
     int q_len = 6;
-    private static BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
+    private static BlockingQueue<BlockchainBlock> unverifiedQueue; // queue of unverified blocks
 
     UnverifiedBlockConsumer(int p) {
         port = p;
@@ -417,9 +434,9 @@ class UnverifiedBlockConsumer implements Runnable {
 
     class UnverifiedBlockWorker implements Runnable {
         Socket sock;
-        private BlockingQueue<String> unverifiedQueue; // queue of unverified blocks
+        private BlockingQueue<BlockchainBlock> unverifiedQueue; // queue of unverified blocks
 
-        public UnverifiedBlockWorker(Socket s, BlockingQueue<String> queue) {
+        public UnverifiedBlockWorker(Socket s, BlockingQueue<BlockchainBlock> queue) {
             sock = s;
             unverifiedQueue = queue;
         }
@@ -431,15 +448,29 @@ class UnverifiedBlockConsumer implements Runnable {
                 StringBuilder sb = new StringBuilder();
                 do {
                     input = in.readLine();
-                    sb.append(input);
+                    if (input != null) {
+                        sb.append(input);
+                    }
                 } while (input != null);
-                // get the next block from multicast
-                // add to queue
-                unverifiedQueue.add(sb.toString());
+
+                // create reader object to unmarshal
+                StringReader reader = new StringReader(sb.toString());
+                JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+                Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+                BlockchainBlock unverified = (BlockchainBlock) unmarshaller.unmarshal(reader);
+
+                //PrintStream out = new PrintStream(new FileOutputStream("./xmlExample.xml"));
+                //out.print(sb.toString());
+                reader.close();
+
+                unverifiedQueue.add(unverified);
                 printQueue();
-                System.out.println("unverified block worker: " + input);
+                System.out.println("unverified block worker: " + sb.toString());
             } catch (IOException ex) {
                 System.out.println(ex);
+            } catch (JAXBException e) {
+                System.out.println("JAXB exception");
+                System.out.println(e);
             }
         }
 
