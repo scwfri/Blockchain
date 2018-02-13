@@ -273,8 +273,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            //System.out.println("Origin node pid: " + originNode.toString());
-            //block.setCreatingProcessId(String.valueOf(originNode.getPid()));
+            block.setCreatingProcessId(String.valueOf(originNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
@@ -336,7 +335,7 @@ class BlockchainNodeMulticast {
 
  BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
         newBlock = input;
-        new Thread(new MulticastWorker(input)).start();
+        new Thread(new MulticastWorker(input, bcNode)).start();
         originNode = bcNode;
     }
 
@@ -349,7 +348,7 @@ class BlockchainNodeMulticast {
         private Socket sock;
         private int port;
 
-        private MulticastWorker(String input) {
+        private MulticastWorker(String input, BlockchainNode originNode) {
             message = input;
             CreateXml createXml = new CreateXml();
             xml = createXml.create(input, originNode);
