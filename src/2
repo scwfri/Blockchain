@@ -59,7 +59,7 @@ class BlockchainNode {
         setPid(pid);
 
         // privateKey = Keys.getInstance.getPrivateKey();
-        unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
+        unverifiedBlockServer = new UnverifiedBlockServer(pid);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         blockchainStack = new LinkedBlockingDeque<>();
 
@@ -263,10 +263,8 @@ class CreateXml {
     public CreateXml() {
     }
 
-    // TODO: issue with blockchain node being passed in
     public String create(String input, BlockchainNode originNode) {
         pt = new ParseText(input);
-        System.out.println(originNode.toString());
         try {
             BlockchainBlock block = new BlockchainBlock();
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
@@ -275,7 +273,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            block.setCreatingProcessId(String.valueOf(originNode.getPid()));
+            block.setCreatingProcessId(String.valueOf(blockchainNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
@@ -284,7 +282,6 @@ class CreateXml {
             block.setDiagnosis(pt.diagnosis);
             block.setTreatment(pt.treatment);
             block.setPrescription(pt.prescription);
-            System.out.println("createxml block: " + block.toString());
             marshaller.marshal(block, sw);
             System.out.println("marshalled: " + sw.toString());
             return sw.toString();
@@ -332,12 +329,10 @@ class BlockchainNodeMulticast {
     private int q_len = 6;
     private String newBlock;
     private String xml;
-    private BlockchainNode originNode;
 
- BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
+    public BlockchainNodeMulticast(String input, BlockchainNode originNode) {
         newBlock = input;
         new Thread(new MulticastWorker(input)).start();
-        originNode = bcNode;
     }
 
     public static void setNumProcesses(int num) {
@@ -381,11 +376,9 @@ class UnverifiedBlockServer implements Runnable {
     // UnverifiedBlockWorker does "work" on new block
     // once verified, UnverifiedBlockWorker tells BlockChainNodeList to multicast
     private int pid;
-    private BlockchainNode originNode;
 
-    public UnverifiedBlockServer(int p, BlockchainNode blockchainNode) {
+    public UnverifiedBlockServer(int p) {
         pid = p;
-        originNode = blockchainNode;
     }
 
     public void run() {
@@ -406,7 +399,7 @@ class UnverifiedBlockServer implements Runnable {
                 if (input.equals("R")) {
                     String line = fr.readLine();
                     sb.append(line);
-                    new BlockchainNodeMulticast(line.toString(), originNode);
+                    new BlockchainNodeMulticast(line.toString());
                 }
             } while (input.indexOf("quit") == -1);
         } catch (IOException ex) {
