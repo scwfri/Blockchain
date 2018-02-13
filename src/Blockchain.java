@@ -37,7 +37,7 @@ class Blockchain {
         int q_len = 6; // queue length
         int pid = ((args.length < 1) ? 0 : Integer.parseInt(args[0]));
         System.out.println("pid: " + pid);
-        new BlockchainNode(pid);
+        BlockchainNode bc = new BlockchainNode(pid);
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
     }
@@ -66,10 +66,11 @@ class BlockchainNode {
 
         // tell BlockchainNodeMulticast the number of processes
         BlockchainNodeMulticast.setNumProcesses(numProcesses);
-        startServerandConsumer();
+        this.startServerandConsumer();
     }
 
-    private void startServerandConsumer() {
+    public void startServerandConsumer() {
+        System.out.println("this.pid: " + this.getPid());
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         // intialize threads
@@ -118,7 +119,6 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
     private String blockId;
     private String verificationProcessId;
     private String creatingProcessId;
-    private String prevHash;
     private String firstName;
     private String lastName;
     private String dob;
@@ -178,15 +178,6 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
     @XmlElement
     public void setCreatingProcessId(String creatingProcessId) {
         this.creatingProcessId = creatingProcessId;
-    }
-
-    public String getPrevHash() {
-        return prevHash;
-    }
-
-    @XmlElement
-    public void setPrevHash(String prevHash) {
-        this.prevHash = prevHash;
     }
 
     public String getFirstName() {
@@ -256,7 +247,7 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
     public String toString() {
         return "BlockchainBlock [PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
                 + blockId + ", verificationProcessId=" + verificationProcessId + ", creatingProcessId="
-                + creatingProcessId + ", prevHash=" + prevHash + ", firstName=" + firstName + ", lastName=" + lastName
+                + creatingProcessId + ", prevHash=" + firstName + ", lastName=" + lastName
                 + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
                 + ", prescription=" + prescription + "]";
     }
@@ -282,6 +273,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
+            //System.out.println("Origin node pid: " + originNode.toString());
             //block.setCreatingProcessId(String.valueOf(originNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
