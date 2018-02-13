@@ -59,19 +59,22 @@ class BlockchainNode {
         setPid(pid);
 
         // privateKey = Keys.getInstance.getPrivateKey();
-        unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
-        unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         blockchainStack = new LinkedBlockingDeque<>();
-
-        // intialize threads
-        new Thread(unverifiedBlockServer).start();
-        new Thread(unverifiedBlockConsumer).start();
 
         // get port numbers
         setPorts();
 
         // tell BlockchainNodeMulticast the number of processes
         BlockchainNodeMulticast.setNumProcesses(numProcesses);
+        startServerandConsumer();
+    }
+
+    private void startServerandConsumer() {
+        unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
+        unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
+        // intialize threads
+        new Thread(unverifiedBlockServer).start();
+        new Thread(unverifiedBlockConsumer).start();
     }
 
     public void addBlockchainBlock(BlockchainBlock bcBlock) {
@@ -101,6 +104,10 @@ class BlockchainNode {
 
     public int getPid() {
         return pid;
+    }
+
+    public String toString() {
+        return ("pid of this BlockchainNode: " + pid);
     }
 }
 
@@ -266,7 +273,7 @@ class CreateXml {
     // TODO: issue with blockchain node being passed in
     public String create(String input, BlockchainNode originNode) {
         pt = new ParseText(input);
-        System.out.println(originNode.toString());
+        //System.out.println(originNode.toString());
         try {
             BlockchainBlock block = new BlockchainBlock();
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
@@ -275,7 +282,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            block.setCreatingProcessId(String.valueOf(originNode.getPid()));
+            //block.setCreatingProcessId(String.valueOf(originNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
@@ -291,6 +298,7 @@ class CreateXml {
         } catch (Exception ex) {
             System.out.println("CreateXml exception");
             System.out.println(ex);
+            ex.printStackTrace();
             return "";
         }
     }
@@ -413,6 +421,7 @@ class UnverifiedBlockServer implements Runnable {
             System.out.println("File not found.");
         } catch (Exception e) {
             System.out.println("interruped exception " + e);
+            e.printStackTrace();
         }
     }
 
@@ -428,6 +437,7 @@ class UnverifiedBlockConsumer implements Runnable {
     private BlockchainNode blockchainNode;
 
     UnverifiedBlockConsumer(int p, BlockchainNode bcNode) {
+        System.out.println("unverifiedblockconsumer: " + bcNode.toString());
         port = p;
         unverifiedQueue = new PriorityBlockingQueue<>();
         System.out.println("starting unverified block consumer");
