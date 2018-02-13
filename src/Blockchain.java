@@ -534,7 +534,7 @@ class UnverifiedBlockConsumer implements Runnable {
                     String hex = DatatypeConverter.printHexBinary(byteHash);
                     System.out.println("hex val: " + hex);
                     if (hex.substring(0,1).equals("F")) {
-                        System.out.println("WINNER!");
+                        System.out.println("time: " + System.currentTimeMillis() + "\nWINNER!");
                         bool = false;
                     }
                 } catch (Exception ex) {
