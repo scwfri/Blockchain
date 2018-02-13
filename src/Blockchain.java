@@ -526,8 +526,6 @@ class UnverifiedBlockConsumer implements Runnable {
                 // generate random string to attempt to solve
                 randomString = new String(UUID.randomUUID().toString());
                 workerBlock.setRandomString(randomString);
-                // TODO: hash and check value
-                // TODO: hash and check if last 3 bits are "0"
                 try {
                     MessageDigest md = MessageDigest.getInstance("SHA-256");
                     byte[] byteHash = md.digest(workerBlock.toString().getBytes("UTF-8"));
