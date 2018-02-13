@@ -264,8 +264,7 @@ class CreateXml {
     public CreateXml() {
     }
 
-    // TODO: issue with blockchain node being passed in
-    public String create(String input, BlockchainNode originNode) {
+    public String marshalFromString(String input, BlockchainNode originNode) {
         pt = new ParseText(input);
         //System.out.println(originNode.toString());
         try {
@@ -295,6 +294,27 @@ class CreateXml {
             ex.printStackTrace();
             return "";
         }
+    }
+
+    public String marshalFromBlockchainBlock(BlockchainBlock newBlock, BlockchainNode originNode) {
+        try {
+            BlockchainBlock block = newBlock;
+            JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+            Marshaller marshaller = jaxbContext.createMarshaller();
+            StringWriter sw = new StringWriter();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+
+            System.out.println("newBlockchainBlock: " + block.toString());
+            marshaller.marshal(block, sw);
+            System.out.println("marshalled new block: " + sw.toString());
+            return sw.toString();
+        } catch (Exception ex) {
+            System.out.println("CreateXml exception");
+            System.out.println(ex);
+            ex.printStackTrace();
+            return "";
+        }
+
     }
 
     class ParseText {
@@ -333,10 +353,11 @@ class BlockchainNodeMulticast {
     private String serverName = "localhost";
     private int q_len = 6;
     private String newBlock;
-    private String xml;
+    private String xmlToSend;
     private BlockchainNode originNode;
 
  BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
+        // received in XML for new Block
         newBlock = input;
         new Thread(new MulticastWorker(input, bcNode)).start();
         originNode = bcNode;
@@ -350,11 +371,26 @@ class BlockchainNodeMulticast {
         private String message;
         private Socket sock;
         private int port;
+        private BlockchainBlock newBlockchainBlock;
 
         private MulticastWorker(String input, BlockchainNode originNode) {
+            // pass in XML as 'input', store in 'message'
             message = input;
+            // new CreateXML class to create XML
             CreateXml createXml = new CreateXml();
-            xml = createXml.create(input, originNode);
+            // create XML for unverified block
+            xmlToSend = createXml.marshalFromString(input, originNode);
+        }
+
+        // TODO: finish this constructor
+        // TODO: take in BlockchainBlock, createXML, and multicast
+        private MulticastWorker(BlockchainBlock newBlock, BlockchainNode originNode) {
+            // overloaded constructor
+            // this constructor takes completed blockchain block, and allows for multicast
+            newBlockchainBlock = newBlock;
+            // need to unmarshal data here?
+            CreateXml createXml = new CreateXml();
+            xmlToSend = createXml.marshalFromBlockchainBlock(newBlock, originNode);
         }
 
         public void run() {
@@ -366,7 +402,7 @@ class BlockchainNodeMulticast {
                     System.out.println("num processes: " + numProcesses);
                     sock = new Socket(serverName, port);
                     PrintStream out = new PrintStream(sock.getOutputStream());
-                    out.println(xml);
+                    out.println(xmlToSend);
                     sock.close();
                 }
             } catch (IOException ex) {
