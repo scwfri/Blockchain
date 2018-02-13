@@ -21,12 +21,15 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.*;
+import java.security.MessageDigest;
+import java.math.BigInteger;
 
 // XML libraries
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.DatatypeConverter;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -525,7 +528,19 @@ class UnverifiedBlockConsumer implements Runnable {
                 workerBlock.setRandomString(randomString);
                 // TODO: hash and check value
                 // TODO: hash and check if last 3 bits are "0"
-                bool = false;
+                try {
+                    MessageDigest md = MessageDigest.getInstance("SHA-256");
+                    byte[] byteHash = md.digest(workerBlock.toString().getBytes("UTF-8"));
+                    String hex = DatatypeConverter.printHexBinary(byteHash);
+                    System.out.println("hex val: " + hex);
+                    if (hex.substring(0,1).equals("F")) {
+                        System.out.println("WINNER!");
+                        bool = false;
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+
                 // do not need to store THIS hash
                 // only need to store previous hash
             }
