@@ -356,16 +356,21 @@ class BlockchainNodeMulticast {
     private String xmlToSend;
     private BlockchainNode originNode;
 
- BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
+    BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
         // received in XML for new Block
         newBlock = input;
         new Thread(new MulticastWorker(input, bcNode)).start();
         originNode = bcNode;
     }
 
-    public static void setNumProcesses(int num) {
-        numProcesses = num;
+    BlockchainNodeMulticast(BlockchainBlock newBlockchainBlock, BlockchainNode bcNode) {
+        //newBlock = newBlockchainBlock;
+        new Thread(new MulticastWorker(newBlockchainBlock, bcNode)).start();
     }
+
+        public static void setNumProcesses(int num) {
+            numProcesses = num;
+        }
 
     class MulticastWorker implements Runnable {
         private String message;
@@ -549,7 +554,6 @@ class UnverifiedBlockConsumer implements Runnable {
         }
 
         private void solve(BlockchainBlock newBlock) {
-            // TODO: do work to solve puzzle
             // TODO: multicast updated block (will add to blockchain)
             String randomString;
             Boolean bool = true;
@@ -580,6 +584,7 @@ class UnverifiedBlockConsumer implements Runnable {
             }
 
             blockchainNode.addBlockchainBlock(workerBlock);
+            // TODO: multicast block
         }
 
         private void printQueue(){
