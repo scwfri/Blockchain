@@ -120,7 +120,7 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
     private String previousBlockHash;
     private String randomString;
     private String blockId;
-    private String verificationProcessId;
+    private String solvedProcessId;
     private String creatingProcessId;
     private String firstName;
     private String lastName;
@@ -165,13 +165,13 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
         this.blockId = blockId;
     }
 
-    public String getVerificationProcessId() {
-        return verificationProcessId;
+    public String getSolvedProcessId() {
+        return solvedProcessId;
     }
 
     @XmlElement
-    public void setVerificationProcessId(String verificationProcessId) {
-        this.verificationProcessId = verificationProcessId;
+    public void setSolvedProcessId(String solvedProcessId) {
+        this.solvedProcessId = solvedProcessId;
     }
 
     public String getCreatingProcessId() {
@@ -249,7 +249,7 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
     @Override
     public String toString() {
         return "BlockchainBlock [PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
-                + blockId + ", verificationProcessId=" + verificationProcessId + ", creatingProcessId="
+                + blockId + ", solvedProcesId=" + solvedProcessId + ", creatingProcessId="
                 + creatingProcessId + ", prevHash=" + firstName + ", lastName=" + lastName
                 + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
                 + ", prescription=" + prescription + "]";
@@ -489,20 +489,31 @@ class UnverifiedBlockConsumer implements Runnable {
                 // infinite loop- keep waiting for multicast client to connect
                 sock = servSock.accept(); // blocks
                 // once connected, spawn unverifiedblockworker thread to handle
-                new Thread(new UnverifiedBlockWorker(sock, unverifiedQueue)).start();
+                new Thread(new UnverifiedBlockWorker(sock)).start();
             }
         } catch (IOException ex) {
             System.out.println(ex);
         }
     }
 
+    private void removeFromUnverifiedQueue(String blockId) {
+        // iterate through unverifiedQueue, remove when matches blockId
+        Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
+        while (iter.hasNext()) {
+            BlockchainBlock b = iter.next();
+            if (b.getBlockId().equals(blockId)) {
+                unverifiedQueue.remove(b);
+                System.out.println("\n\n\nremoved " + b.toString() + "\n\n");
+                break;
+            }
+        }
+    }
+
     class UnverifiedBlockWorker implements Runnable {
         Socket sock;
-        private BlockingQueue<BlockchainBlock> unverifiedQueue; // queue of unverified blocks
 
-        public UnverifiedBlockWorker(Socket s, BlockingQueue<BlockchainBlock> queue) {
+        public UnverifiedBlockWorker(Socket s) {
             sock = s;
-            unverifiedQueue = queue;
         }
 
         public void run() {
@@ -531,14 +542,14 @@ class UnverifiedBlockConsumer implements Runnable {
                 if (newBlock.getRandomString() == null) {
                     // if null random string, this is a new block
                     // add to unverified queue
+                    removeFromUnverifiedQueue(newBlock.getBlockId());
                     unverifiedQueue.add(newBlock);
                     solve(newBlock);
                 } else {
                     System.out.println("newly verified blockchain block: " + newBlock.toString());
                     // block has been completed
                     // so remove from unverified queue
-                    Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
-                    unverifiedQueue.remove(newBlock);
+                    removeFromUnverifiedQueue(newBlock.getBlockId());
                     System.out.println("unverified queue after remove: " + unverifiedQueue);
                     // and add to Blockchain
                     // TODO: Add to blockchain
@@ -576,6 +587,7 @@ class UnverifiedBlockConsumer implements Runnable {
                     System.out.println("hex val: " + hex);
                     if (hex.substring(0,1).equals("F")) {
                         System.out.println("time: " + System.currentTimeMillis() + "\nWINNER!");
+                        workerBlock.setSolvedProcessId(String.valueOf(blockchainNode.getPid()));
                         bool = false;
                     }
                 } catch (Exception ex) {
