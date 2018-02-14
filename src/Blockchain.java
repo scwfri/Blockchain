@@ -489,6 +489,17 @@ class UnverifiedBlockConsumer implements Runnable {
         }
     }
 
+    private boolean isUnverified(String blockId) {
+        Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
+        while (iter.hasNext()) {
+            BlockchainBlock b = iter.next();
+            if (b.getBlockId().equals(blockId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void removeFromUnverifiedQueue(String blockId) {
         // iterate through unverifiedQueue, remove when matches blockId
         Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
@@ -535,6 +546,7 @@ class UnverifiedBlockConsumer implements Runnable {
                 if (newBlock.getRandomString() == null) {
                     // if null random string, this is a new block
                     // add to unverified queue
+                    System.out.println("received new unsolved block");
                     removeFromUnverifiedQueue(newBlock.getBlockId());
                     unverifiedQueue.add(newBlock);
                     solve(newBlock);
@@ -542,7 +554,7 @@ class UnverifiedBlockConsumer implements Runnable {
                     printQueue();
                     return;
                 } else {
-                    // TODO: for some reason, this continually prints
+                    System.out.println("received new solved block");
                     System.out.println("newly verified blockchain block: " + newBlock.toString());
                     // block has been completed
                     // so remove from unverified queue
@@ -565,7 +577,6 @@ class UnverifiedBlockConsumer implements Runnable {
         }
 
         private void solve(BlockchainBlock newBlock) {
-            // TODO: multicast updated block (will add to blockchain)
             String randomString;
             Boolean bool = true;
             BlockchainBlock workerBlock = newBlock;
@@ -578,6 +589,13 @@ class UnverifiedBlockConsumer implements Runnable {
                 randomString = new String(UUID.randomUUID().toString());
                 workerBlock.setRandomString(randomString);
                 try {
+                    // TODO: make sure block not verified yet
+                    // check to make sure current block is not verified yet
+                    if (!isUnverified(workerBlock.getBlockId())) {
+                        System.out.println("---------CURRENT WORK BLOCK VERIFIED------");
+                        bool = false;
+                        return;
+                    }
                     MessageDigest md = MessageDigest.getInstance("SHA-256");
                     byte[] byteHash = md.digest(workerBlock.toString().getBytes("UTF-8"));
                     String hex = DatatypeConverter.printHexBinary(byteHash);
@@ -587,6 +605,8 @@ class UnverifiedBlockConsumer implements Runnable {
                         workerBlock.setSolvedProcessId(String.valueOf(blockchainNode.getPid()));
                         bool = false;
                     }
+                    // sleep for 5 sec
+                    Thread.sleep(5000);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
