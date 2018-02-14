@@ -384,8 +384,6 @@ class BlockchainNodeMulticast {
             xmlToSend = createXml.marshalFromString(input, originNode);
         }
 
-        // TODO: finish this constructor
-        // TODO: take in BlockchainBlock, createXML, and multicast
         private MulticastWorker(BlockchainBlock newBlock) {
             // overloaded constructor
             // this constructor takes completed blockchain block, and allows for multicast
@@ -561,9 +559,7 @@ class UnverifiedBlockConsumer implements Runnable {
                     removeFromUnverifiedQueue(newBlock.getBlockId());
                     System.out.println("unverified queue after remove: " + unverifiedQueue);
                     // and add to Blockchain
-                    // TODO: Add to blockchain
                     // TODO: verify new block?
-                    // TODO: stop work on block
                     System.out.print("verified block queue: ");
                     printQueue();
                     return;
@@ -589,7 +585,6 @@ class UnverifiedBlockConsumer implements Runnable {
                 randomString = new String(UUID.randomUUID().toString());
                 workerBlock.setRandomString(randomString);
                 try {
-                    // TODO: make sure block not verified yet
                     // check to make sure current block is not verified yet
                     if (!isUnverified(workerBlock.getBlockId())) {
                         System.out.println("---------CURRENT WORK BLOCK VERIFIED------");
@@ -605,7 +600,7 @@ class UnverifiedBlockConsumer implements Runnable {
                         workerBlock.setSolvedProcessId(String.valueOf(blockchainNode.getPid()));
                         bool = false;
                     }
-                    // sleep for 5 sec
+                    // sleep for 5 sec -- for syncrhonization
                     Thread.sleep(5000);
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -616,7 +611,6 @@ class UnverifiedBlockConsumer implements Runnable {
             }
 
             blockchainNode.addBlockchainBlock(workerBlock);
-            // TODO: multicast block
             new BlockchainNodeMulticast(workerBlock);
         }
 
