@@ -118,6 +118,7 @@ class BlockchainNode {
 
 @XmlRootElement
 class BlockchainBlock implements Comparable<BlockchainBlock> {
+    private long createTime;
     private String previousBlockHash;
     private String randomString;
     private String blockId;
@@ -137,6 +138,16 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
         } else {
             return 1;
         }
+    }
+
+
+    public long getCreateTime() {
+        return createTime;
+    }
+
+    @XmlElement
+    public void setCreateTime(long createTime) {
+        createTime = createTime;
     }
 
     public String getPreviousBlockHash() {
@@ -249,7 +260,7 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
 
     @Override
     public String toString() {
-        return "BlockchainBlock [PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
+        return "BlockchainBlock [createTime=" + createTime + "PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
                 + blockId + ", solvedProcesId=" + solvedProcessId + ", creatingProcessId="
                 + creatingProcessId + ", prevHash=" + firstName + ", lastName=" + lastName
                 + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
@@ -278,6 +289,8 @@ class CreateXml {
             // previousBlockHash is set in solve() method
             // set randomString to null, to indicate unsolved
             block.setRandomString(null);
+            System.out.println("currenttime: " + System.currentTimeMillis());
+            block.setCreateTime(System.currentTimeMillis());
             block.setCreatingProcessId(String.valueOf(originNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
