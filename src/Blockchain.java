@@ -296,7 +296,7 @@ class CreateXml {
         }
     }
 
-    public String marshalFromBlockchainBlock(BlockchainBlock newBlock, BlockchainNode originNode) {
+    public String marshalFromBlockchainBlock(BlockchainBlock newBlock) {
         try {
             BlockchainBlock block = newBlock;
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
@@ -363,9 +363,9 @@ class BlockchainNodeMulticast {
         originNode = bcNode;
     }
 
-    BlockchainNodeMulticast(BlockchainBlock newBlockchainBlock, BlockchainNode bcNode) {
+    BlockchainNodeMulticast(BlockchainBlock newBlockchainBlock) {
         //newBlock = newBlockchainBlock;
-        new Thread(new MulticastWorker(newBlockchainBlock, bcNode)).start();
+        new Thread(new MulticastWorker(newBlockchainBlock)).start();
     }
 
         public static void setNumProcesses(int num) {
@@ -389,13 +389,13 @@ class BlockchainNodeMulticast {
 
         // TODO: finish this constructor
         // TODO: take in BlockchainBlock, createXML, and multicast
-        private MulticastWorker(BlockchainBlock newBlock, BlockchainNode originNode) {
+        private MulticastWorker(BlockchainBlock newBlock) {
             // overloaded constructor
             // this constructor takes completed blockchain block, and allows for multicast
             newBlockchainBlock = newBlock;
             // need to unmarshal data here?
             CreateXml createXml = new CreateXml();
-            xmlToSend = createXml.marshalFromBlockchainBlock(newBlock, originNode);
+            xmlToSend = createXml.marshalFromBlockchainBlock(newBlock);
         }
 
         public void run() {
@@ -534,9 +534,10 @@ class UnverifiedBlockConsumer implements Runnable {
                     unverifiedQueue.add(newBlock);
                     solve(newBlock);
                 } else {
+                    System.out.println("newly verified blockchain block: " + newBlock.toString());
                     // block has been completed
                     // so remove from unverified queue
-                    unverifiedQueue.remove(newBlock);
+                    //unverifiedQueue.remove(newBlock);
                     // and add to Blockchain
                     // TODO: Add to blockchain
                     // TODO: verify new block?
@@ -585,6 +586,7 @@ class UnverifiedBlockConsumer implements Runnable {
 
             blockchainNode.addBlockchainBlock(workerBlock);
             // TODO: multicast block
+            new BlockchainNodeMulticast(workerBlock);
         }
 
         private void printQueue(){
