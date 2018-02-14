@@ -1,0 +1,94 @@
+i: pid of this BlockchainNode: 0
+ckconsumer: pid of this BlockchainNode: 1
+starting unverified block consumer
+Scott Friedrich's blockchain framework.
+Using processID: 1
+
+Enter R to read file, q to quit> R
+marshalled: <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<blockchainBlock>
+    <blockId>ba2034b0-e320-4153-8859-9f8be6bd6f39</blockId>
+    <creatingProcessId>1</creatingProcessId>
+    <diagnosis> ObessivePersonality</diagnosis>
+    <dob> 1992.01.31</dob>
+    <firstName>Rita</firstName>
+    <lastName> Vita</lastName>
+    <prescription> Ibuprofen</prescription>
+    <ssNum> 999-456-789</ssNum>
+    <treatment> TryToRelax</treatment>
+</blockchainBlock>
+
+hex val: 8EBF2FB423C427E7BD3254B0BF35B75197D768996F49896409C52EC0E8D0315A
+hex val: E58FA36ED52704E39FA3C3E9F19459F59B0AE5481183B8EB3826496ED5718141
+hex val: 6CE1C405370AA8A1B317BF5AF7AFC6D212CD482515CB26D583E07CCC9D494531
+hex val: 27F8DF72E3062F5AB3769402EEF4ECDE8E0322E836556C12036F4C1E971B259D
+hex val: 16559CD98CDD3FACF3611EBC537454124456602427826BC3D5D29C0B87ABA0F7
+hex val: 8AE4F3162CF47B4BD79947871FC172FE8E31A1E6CF5BD3F0054EFF43DC493867
+hex val: 60790DEEDADCD93837E18B5CF5DAAB17100A1B670526BCB276CDF2CEC1850000
+hex val: 5F980552B194485046B7617F05CE1B98B06489123D557F8F4CB68D6D86DD29B5
+hex val: 9DAAD8EC208BCC412E7757A680814B398CB23AA16FFAECC60F976DB97E78119F
+hex val: 5B2760E6D82363F405141AA4D2DFA17A6DD1352ED380D4152CFF1D2EA9D31172
+hex val: 317E8AC44F27A89AF21717FB904DB2C139B141BF75F920136D7399038688130F
+hex val: 1CD9742B826FE9A4077A51EDE0EA81E0F7396D5623A80C320561BF9BD677D7BE
+hex val: B4C879F12AB1C24AC7F58AD39E0A392EBABD4A4AA6376B09E1810847C26D3C4C
+hex val: D96E29808CFB46ACD0A8AC985DB0DB64A68803CFC40D41E261C138FC8296AE29
+hex val: 374DD3478CC938BA2B5116D4B6B3FE2B23A6CE681608C3529B166C2BA1607799
+hex val: 8839BD22275B54291EBF87BDF972F64846937F39992204434ADF583A73E4FEF2
+hex val: 35986BA78761145AF62A3ABD124F70E8FB1AB1F0E2CC969CECCD9897E940D5AB
+hex val: EB44FD5EBA8E33BEFDE1F41525C46E4C0301083405E2ED0515C3D100AEFEBFE0
+hex val: 5179E68407242701E52CA3D9345B8959215F543EFA4C76154BF219F784FE1533
+hex val: 120AFC27CC151806492C9AA7D388B5D9D9D3C0357CF481A8B28024FCE523F110
+hex val: 2B6773EE195051FE12937272A1F30224146693EAE7E994216EC119E81E5F59AE
+hex val: 0DABEC7CD8CAF8DE56E91D5205B8A8E0FCE059142927A93C1E73668D13726327
+hex val: A76F6966BE8874D55684B5BD315C40B7755CBDB1DA029F954A19AF7116FCA40E
+hex val: B9E76DCAE8B9B0DBB496ED86834F8BEEACCF5E75A86144640121B028462E255E
+hex val: 3AF89DB034847B846DCC4F0DBF399EB93403FB66AF2D08D4B08A22A245BB4BCA
+hex val: 710B3D96BD76D86B8FEFF479F35706E757BE77D18638B4D7286E493110614FCC
+hex val: 0E56092D27D050414A02DF9473839B8359389EADFB576E13BCD403DE55063F59
+hex val: BB673D77B0F88C5D0A81C1AE13FA1AFE8D99C4D43A24623AD15D1988CD80DA5A
+hex val: DBFC1889A75C29C64668D1A043CBFAC8B3011FD25EA076E573B8F64C4ECF648D
+hex val: E7106D015087A2A9A8A2D3C0641FACBC8FA2B6D14BAEC9CE0E7D44839D27862E
+hex val: CC48DAEEA95A344E476D9CC44F6212491680BE524126BC7A42E3FBF56BF4428F
+hex val: F4BBC4FFB30C084EF1BD64FF2C987D060B79CEE228392AE9BE4A426750CE203F
+time: 1518578249549
+WINNER!
+
+ckchainStack:[BlockchainBlock [PreviousBlockHash=0, RandomString=e620333f-8d2a-4dd4-a5ef-d54822754b03, blockId=ba2034b0-e320-4153-8859-9f8be6bd6f39, solvedProcesId=1, creatingProcessId=1, prevHash=Rita, lastName= Vita, dob= 1992.01.31, ssNum= 999-456-789, diagnosis= ObessivePersonality, treatment= TryToRelax, prescription= Ibuprofen]]
+marshalled new block: <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<blockchainBlock>
+    <blockId>ba2034b0-e320-4153-8859-9f8be6bd6f39</blockId>
+    <creatingProcessId>1</creatingProcessId>
+    <diagnosis> ObessivePersonality</diagnosis>
+    <dob> 1992.01.31</dob>
+    <firstName>Rita</firstName>
+    <lastName> Vita</lastName>
+    <prescription> Ibuprofen</prescription>
+    <previousBlockHash>0</previousBlockHash>
+    <randomString>e620333f-8d2a-4dd4-a5ef-d54822754b03</randomString>
+    <solvedProcessId>1</solvedProcessId>
+    <ssNum> 999-456-789</ssNum>
+    <treatment> TryToRelax</treatment>
+</blockchainBlock>
+
+PRINT QUEUE:
+[BlockchainBlock [PreviousBlockHash=0, RandomString=e620333f-8d2a-4dd4-a5ef-d54822754b03, blockId=ba2034b0-e320-4153-8859-9f8be6bd6f39, solvedProcesId=1, creatingProcessId=1, prevHash=Rita, lastName= Vita, dob= 1992.01.31, ssNum= 999-456-789, diagnosis= ObessivePersonality, treatment= TryToRelax, prescription= Ibuprofen]]
+newly verified blockchain block: BlockchainBlock [PreviousBlockHash=0, RandomString=e620333f-8d2a-4dd4-a5ef-d54822754b03, blockId=ba2034b0-e320-4153-8859-9f8be6bd6f39, solvedProcesId=1, creatingProcessId=1, prevHash=Rita, lastName= Vita, dob= 1992.01.31, ssNum= 999-456-789, diagnosis= ObessivePersonality, treatment= TryToRelax, prescription= Ibuprofen]
+
+
+
+removed BlockchainBlock [PreviousBlockHash=0, RandomString=e620333f-8d2a-4dd4-a5ef-d54822754b03, blockId=ba2034b0-e320-4153-8859-9f8be6bd6f39, solvedProcesId=1, creatingProcessId=1, prevHash=Rita, lastName= Vita, dob= 1992.01.31, ssNum= 999-456-789, diagnosis= ObessivePersonality, treatment= TryToRelax, prescription= Ibuprofen]
+
+
+unverified queue after remove: []
+PRINT QUEUE:
+[]
+newly verified blockchain block: BlockchainBlock [PreviousBlockHash=0, RandomString=237783d4-3fcb-4333-835e-94d8eedc5670, blockId=ba2034b0-e320-4153-8859-9f8be6bd6f39, solvedProcesId=0, creatingProcessId=1, prevHash=Rita, lastName= Vita, dob= 1992.01.31, ssNum= 999-456-789, diagnosis= ObessivePersonality, treatment= TryToRelax, prescription= Ibuprofen]
+unverified queue after remove: []
+PRINT QUEUE:
+[]
+newly verified blockchain block: BlockchainBlock [PreviousBlockHash=0, RandomString=e2bae3aa-4353-4dc6-8a3f-5aec504cc992, blockId=ba2034b0-e320-4153-8859-9f8be6bd6f39, solvedProcesId=2, creatingProcessId=1, prevHash=Rita, lastName= Vita, dob= 1992.01.31, ssNum= 999-456-789, diagnosis= ObessivePersonality, treatment= TryToRelax, prescription= Ibuprofen]
+unverified queue after remove: []
+PRINT QUEUE:
+[]
+
+

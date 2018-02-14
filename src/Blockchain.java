@@ -39,7 +39,6 @@ class Blockchain {
     public static void main(String[] args) {
         int q_len = 6; // queue length
         int pid = ((args.length < 1) ? 0 : Integer.parseInt(args[0]));
-        System.out.println("pid: " + pid);
         BlockchainNode bc = new BlockchainNode(pid);
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
@@ -73,7 +72,6 @@ class BlockchainNode {
     }
 
     public void startServerandConsumer() {
-        System.out.println("this.pid: " + this.getPid());
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         // intialize threads
@@ -266,7 +264,6 @@ class CreateXml {
 
     public String marshalFromString(String input, BlockchainNode originNode) {
         pt = new ParseText(input);
-        //System.out.println(originNode.toString());
         try {
             BlockchainBlock block = new BlockchainBlock();
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
@@ -275,6 +272,9 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
+            // previousBlockHash is set in solve() method
+            // set randomString to null, to indicate unsolved
+            block.setRandomString(null);
             block.setCreatingProcessId(String.valueOf(originNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
@@ -284,7 +284,6 @@ class CreateXml {
             block.setDiagnosis(pt.diagnosis);
             block.setTreatment(pt.treatment);
             block.setPrescription(pt.prescription);
-            System.out.println("createxml block: " + block.toString());
             marshaller.marshal(block, sw);
             System.out.println("marshalled: " + sw.toString());
             return sw.toString();
@@ -303,8 +302,6 @@ class CreateXml {
             Marshaller marshaller = jaxbContext.createMarshaller();
             StringWriter sw = new StringWriter();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-
-            System.out.println("newBlockchainBlock: " + block.toString());
             marshaller.marshal(block, sw);
             System.out.println("marshalled new block: " + sw.toString());
             return sw.toString();
@@ -403,8 +400,6 @@ class BlockchainNodeMulticast {
                 for (int i = 0; i < numProcesses; i++) {
                     // multicast to all blockchain servers
                     port = Ports.getInstance().getUnverifiedBlockPort(i);
-                    System.out.println("multicastworker port = " + port);
-                    System.out.println("num processes: " + numProcesses);
                     sock = new Socket(serverName, port);
                     PrintStream out = new PrintStream(sock.getOutputStream());
                     out.println(xmlToSend);
@@ -433,7 +428,6 @@ class UnverifiedBlockServer implements Runnable {
 
     public void run() {
         //run method
-        System.out.println("hello from unverifiedBlockServer");
         // read data in from text file
         StringBuilder sb = new StringBuilder();
         try {
@@ -442,7 +436,7 @@ class UnverifiedBlockServer implements Runnable {
             Thread.sleep(5);
             BufferedReader userInput;
             userInput = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter R to read file, q to quit> ");
+            System.out.print("Enter R to read file, q to quit> ");
             BufferedReader fr = new BufferedReader(new FileReader(file));
             do {
                 input = userInput.readLine();
@@ -483,7 +477,6 @@ class UnverifiedBlockConsumer implements Runnable {
         // run method
         // do work in this thread
         try {
-            System.out.println("unverified block consumer port: " + port);
             ServerSocket servSock = new ServerSocket(port, q_len);
             while (true) {
                 // infinite loop- keep waiting for multicast client to connect
@@ -545,7 +538,11 @@ class UnverifiedBlockConsumer implements Runnable {
                     removeFromUnverifiedQueue(newBlock.getBlockId());
                     unverifiedQueue.add(newBlock);
                     solve(newBlock);
+                    System.out.print("unverified block queue: ");
+                    printQueue();
+                    return;
                 } else {
+                    // TODO: for some reason, this continually prints
                     System.out.println("newly verified blockchain block: " + newBlock.toString());
                     // block has been completed
                     // so remove from unverified queue
@@ -555,10 +552,10 @@ class UnverifiedBlockConsumer implements Runnable {
                     // TODO: Add to blockchain
                     // TODO: verify new block?
                     // TODO: stop work on block
+                    System.out.print("verified block queue: ");
+                    printQueue();
+                    return;
                 }
-
-                printQueue();
-                System.out.println("unverified block worker: " + sb.toString());
             } catch (IOException ex) {
                 System.out.println(ex);
             } catch (JAXBException e) {
@@ -604,6 +601,7 @@ class UnverifiedBlockConsumer implements Runnable {
         }
 
         private void printQueue(){
+            System.out.println("PRINT QUEUE:");
             System.out.println(unverifiedQueue.toString());
         }
     }
