@@ -537,7 +537,9 @@ class UnverifiedBlockConsumer implements Runnable {
                     System.out.println("newly verified blockchain block: " + newBlock.toString());
                     // block has been completed
                     // so remove from unverified queue
-                    //unverifiedQueue.remove(newBlock);
+                    Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
+                    unverifiedQueue.remove(newBlock);
+                    System.out.println("unverified queue after remove: " + unverifiedQueue);
                     // and add to Blockchain
                     // TODO: Add to blockchain
                     // TODO: verify new block?
