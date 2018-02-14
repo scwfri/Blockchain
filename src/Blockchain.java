@@ -465,6 +465,7 @@ class UnverifiedBlockConsumer implements Runnable {
 
     UnverifiedBlockConsumer(int p, BlockchainNode bcNode) {
         System.out.println("unverifiedblockconsumer: " + bcNode.toString());
+        // get instance of new SingleThread executor
         port = p;
         unverifiedQueue = new PriorityBlockingQueue<>();
         System.out.println("starting unverified block consumer");
@@ -518,6 +519,9 @@ class UnverifiedBlockConsumer implements Runnable {
             sock = s;
         }
 
+        // TODO: can only work on one block at a time
+        // run method is started by newSingleThreadExecutor()
+        // this allows only one thread to execute at at time
         public void run() {
             try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
@@ -572,7 +576,8 @@ class UnverifiedBlockConsumer implements Runnable {
             }
         }
 
-        private void solve(BlockchainBlock newBlock) {
+        // solve is a synchronized method, so only one thread can execute at a time
+        private synchronized void solve(BlockchainBlock newBlock) {
             String randomString;
             Boolean bool = true;
             BlockchainBlock workerBlock = newBlock;
