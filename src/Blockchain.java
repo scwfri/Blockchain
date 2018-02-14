@@ -17,6 +17,9 @@
 *  https://www.mkyong.com/java/jaxb-hello-world-example/
 ----------------------------------------------------------*/
 
+// TODO: verify blocks
+// TODO: have pid 0 export to file
+
 import java.util.*;
 import java.io.*;
 import java.net.*;
@@ -519,7 +522,6 @@ class UnverifiedBlockConsumer implements Runnable {
             sock = s;
         }
 
-        // TODO: can only work on one block at a time
         // run method is started by newSingleThreadExecutor()
         // this allows only one thread to execute at at time
         public void run() {
