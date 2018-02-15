@@ -49,11 +49,12 @@ class Blockchain {
 }
 
 class BlockchainNode {
+    private int numProcesses = 3; // number of processes
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
-    private int numProcesses = 3; // number of processes
-    private int privateKey; // private key for server
+    private String privateKey;
+    private String publicKey;
     private int pid;
     private int updatedBlockchainPort;
     private int unverifiedBlockPort;
@@ -287,7 +288,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            // previousBlockHash is set in solve() method
+            // previousBlockHash is set in solve() meString
             // set randomString to null, to indicate unsolved
             block.setRandomString(null);
             System.out.println(String.valueOf("currenttime: " + System.currentTimeMillis()));
