@@ -89,7 +89,7 @@ class BlockchainNode {
 
     public String peekLastHash() {
         if (blockchainStack.size() > 0) {
-            return blockchainStack.poll().getPreviousBlockHash();
+            return CalcHashHelper.calc(blockchainStack.poll());
         } else {
             // value we are looking to match in work hash with random string
             return String.valueOf(0b0000);
@@ -118,7 +118,7 @@ class BlockchainNode {
 
 @XmlRootElement
 class BlockchainBlock implements Comparable<BlockchainBlock> {
-    private long createTime;
+    private String createTime;
     private String previousBlockHash;
     private String randomString;
     private String blockId;
@@ -140,14 +140,13 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
         }
     }
 
-
-    public long getCreateTime() {
+    public String getCreateTime() {
         return createTime;
     }
 
     @XmlElement
-    public void setCreateTime(long createTime) {
-        createTime = createTime;
+    public void setCreateTime(String createTime) {
+        this.createTime = String.valueOf(createTime);
     }
 
     public String getPreviousBlockHash() {
@@ -156,7 +155,7 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
 
     @XmlElement
     public void setPreviousBlockHash(String prevBlockHash) {
-        previousBlockHash = prevBlockHash;
+        this.previousBlockHash = prevBlockHash;
     }
 
     public String getRandomString() {
@@ -260,9 +259,9 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
 
     @Override
     public String toString() {
-        return "BlockchainBlock [createTime=" + createTime + "PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
+        return "BlockchainBlock [createTime=" + String.valueOf(createTime) + "PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
                 + blockId + ", solvedProcesId=" + solvedProcessId + ", creatingProcessId="
-                + creatingProcessId + ", prevHash=" + firstName + ", lastName=" + lastName
+                + creatingProcessId + ", firstName=" + firstName + ", lastName=" + lastName
                 + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
                 + ", prescription=" + prescription + "]";
     }
@@ -277,6 +276,8 @@ class CreateXml {
     }
 
     public String marshalFromString(String input, BlockchainNode originNode) {
+        // create new BlockchainBlock object
+        // and marshall to XML
         pt = new ParseText(input);
         try {
             BlockchainBlock block = new BlockchainBlock();
@@ -289,8 +290,8 @@ class CreateXml {
             // previousBlockHash is set in solve() method
             // set randomString to null, to indicate unsolved
             block.setRandomString(null);
-            System.out.println("currenttime: " + System.currentTimeMillis());
-            block.setCreateTime(System.currentTimeMillis());
+            System.out.println(String.valueOf("currenttime: " + System.currentTimeMillis()));
+            block.setCreateTime(String.valueOf(System.currentTimeMillis()));
             block.setCreatingProcessId(String.valueOf(originNode.getPid()));
             block.setBlockId(new String(UUID.randomUUID().toString()));
             block.setFirstName(pt.firstName);
@@ -313,12 +314,11 @@ class CreateXml {
 
     public String marshalFromBlockchainBlock(BlockchainBlock newBlock) {
         try {
-            BlockchainBlock block = newBlock;
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
             Marshaller marshaller = jaxbContext.createMarshaller();
             StringWriter sw = new StringWriter();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-            marshaller.marshal(block, sw);
+            marshaller.marshal(newBlock, sw);
             System.out.println("marshalled new block: " + sw.toString());
             return sw.toString();
         } catch (Exception ex) {
@@ -576,8 +576,9 @@ class UnverifiedBlockConsumer implements Runnable {
                     // block has been completed
                     // so remove from unverified queue
                     removeFromUnverifiedQueue(newBlock.getBlockId());
+                    // and add to new BlockchainBlcok
+                    blockchainNode.addBlockchainBlock(newBlock);
                     System.out.println("unverified queue after remove: " + unverifiedQueue);
-                    // and add to Blockchain
                     // TODO: verify new block?
                     System.out.print("verified block queue: ");
                     printQueue();
@@ -630,7 +631,7 @@ class UnverifiedBlockConsumer implements Runnable {
                 // only need to store previous hash
             }
 
-            blockchainNode.addBlockchainBlock(workerBlock);
+            // create new multicast to send to all BlockchainNodes
             new BlockchainNodeMulticast(workerBlock);
         }
 
@@ -638,6 +639,21 @@ class UnverifiedBlockConsumer implements Runnable {
             System.out.println("PRINT QUEUE:");
             System.out.println(unverifiedQueue.toString());
         }
+    }
+}
+
+class CalcHashHelper {
+    public static String calc(BlockchainBlock b) {
+        String hexRes = null;
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] byteHash = md.digest(b.toString().getBytes("UTF-8"));
+            hexRes =  DatatypeConverter.printHexBinary(byteHash);
+        } catch (Exception ex) {
+            System.out.println("CalcHash exception");
+            ex.printStackTrace();
+        }
+        return hexRes;
     }
 }
 
