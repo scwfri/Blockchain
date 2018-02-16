@@ -26,6 +26,7 @@ import java.net.*;
 import java.util.concurrent.*;
 import java.security.MessageDigest;
 import java.math.BigInteger;
+import java.security.*;
 
 // XML libraries
 import javax.xml.bind.JAXBContext;
@@ -53,8 +54,8 @@ class BlockchainNode {
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
-    private String privateKey;
-    private String publicKey;
+    private PublicKey publicKey;
+    private PrivateKey privateKey;
     private int pid;
     private int updatedBlockchainPort;
     private int unverifiedBlockPort;
@@ -64,7 +65,7 @@ class BlockchainNode {
         // set pid of BlockchainNode
         setPid(pid);
 
-        // privateKey = Keys.getInstance.getPrivateKey();
+        // create blockchainStack to store blockchain
         blockchainStack = new LinkedBlockingDeque<>();
 
         // get port numbers
@@ -72,7 +73,12 @@ class BlockchainNode {
 
         // tell BlockchainNodeMulticast the number of processes
         BlockchainNodeMulticast.setNumProcesses(numProcesses);
+        this.getInstanceKeys();
         this.startServerandConsumer();
+    }
+
+    private void getInstanceKeys() {
+        Keys.getInstance().getKeys(this);
     }
 
     public void startServerandConsumer() {
@@ -106,6 +112,20 @@ class BlockchainNode {
 
     private void setPid(int pnum) {
         pid = pnum;
+    }
+
+    public void setPublicKey(PublicKey pub) {
+        System.out.println("Public key set");
+        this.publicKey = pub;
+    }
+
+    public PublicKey getPublicKey() {
+        return publicKey;
+    }
+
+    public void setPrivateKey(PrivateKey priv) {
+        System.out.println("private key set");
+        this.privateKey = priv;
     }
 
     public int getPid() {
@@ -663,10 +683,11 @@ class Keys {
     // provide public key to all clients
     // calculate and return new private key to BlockchainNode
     private static Keys instance = null;
-    private ArrayList<String> publicKeyList;
+    // hash map to store private keys: <pid, public key>
+    private ConcurrentHashMap<Integer, PublicKey> publicKeyList;
 
     private Keys() {
-        publicKeyList = new ArrayList<>();
+        publicKeyList = new ConcurrentHashMap<>();
     }
 
     public static synchronized Keys getInstance() {
@@ -676,11 +697,32 @@ class Keys {
         return instance;
     }
 
-    public int getPrivateKey() {
+    public void getKeys(BlockchainNode bn) {
         // calculate public and private key here
         // add public key to publicKeyList
         // return private key to BlockchainNode
-        return 0;
+        PublicKey pub = null;
+        PrivateKey priv = null;
+        try {
+            // genrate secure random to use for key pair generation
+            SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
+            // create KeyPairGenerator, which will create new public/private keys
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            // initialize and create 512 bit key
+            keyGen.initialize(1024, random);
+            // generate the key pair
+            KeyPair pair = keyGen.generateKeyPair();
+            priv = pair.getPrivate();
+            pub = pair.getPublic();
+            } catch (Exception ex) {
+            System.out.println("getPrivateKey exception: " + ex);
+            ex.printStackTrace();
+        }
+        // add public key to public key hash map
+        publicKeyList.put(bn.getPid(), pub);
+        // set BlockchainNode class public and private keys
+        bn.setPublicKey(pub);
+        bn.setPrivateKey(priv);
     }
 }
 
