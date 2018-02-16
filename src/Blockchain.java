@@ -57,8 +57,7 @@ class BlockchainNode {
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
-    private PublicKey publicKey;
-    private PrivateKey privateKey;
+    private KeyPair keyPair;
     private int pid;
     private int updatedBlockchainPort;
     private int unverifiedBlockPort;
@@ -82,11 +81,16 @@ class BlockchainNode {
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
             Keys.getInstance().multicastPublicKeys();
+
+            // base64 encoded private key
+            //priv = keyPair.getPrivate().getEncoded();
+            //base64 encoded public key
+            //pub = keyPair.getPublic().getEncoded();
         }
     }
 
     private void getInstanceKeys() {
-        Keys.getInstance().getKeys(this);
+        keyPair = Keys.getInstance().getKeys(this);
     }
 
     public void startServerandConsumer() {
@@ -122,18 +126,8 @@ class BlockchainNode {
         pid = pnum;
     }
 
-    public void setPublicKey(PublicKey pub) {
-        System.out.println("Public key set");
-        this.publicKey = pub;
-    }
-
     public PublicKey getPublicKey() {
-        return publicKey;
-    }
-
-    public void setPrivateKey(PrivateKey priv) {
-        System.out.println("private key set");
-        this.privateKey = priv;
+        return keyPair.getPublic();
     }
 
     public int getPid() {
@@ -145,157 +139,6 @@ class BlockchainNode {
     }
 }
 
-@XmlRootElement
-class BlockchainBlock implements Comparable<BlockchainBlock> {
-    private String createTime;
-    private String previousBlockHash;
-    private String randomString;
-    private String blockId;
-    private String solvedProcessId;
-    private String creatingProcessId;
-    private String firstName;
-    private String lastName;
-    private String dob;
-    private String ssNum;
-    private String diagnosis;
-    private String treatment;
-    private String prescription;
-
-    public int compareTo(BlockchainBlock other) {
-        if (this.blockId.equals(other.blockId) == true) {
-            return 0;
-        } else {
-            return 1;
-        }
-    }
-
-    public String getCreateTime() {
-        return createTime;
-    }
-
-    @XmlElement
-    public void setCreateTime(String createTime) {
-        this.createTime = String.valueOf(createTime);
-    }
-
-    public String getPreviousBlockHash() {
-        return previousBlockHash;
-    }
-
-    @XmlElement
-    public void setPreviousBlockHash(String prevBlockHash) {
-        this.previousBlockHash = prevBlockHash;
-    }
-
-    public String getRandomString() {
-        return randomString;
-    }
-
-    @XmlElement
-    public void setRandomString(String randomString) {
-        this.randomString = randomString;
-    }
-
-    public String getBlockId() {
-        return blockId;
-    }
-
-    @XmlElement
-    public void setBlockId(String blockId) {
-        this.blockId = blockId;
-    }
-
-    public String getSolvedProcessId() {
-        return solvedProcessId;
-    }
-
-    @XmlElement
-    public void setSolvedProcessId(String solvedProcessId) {
-        this.solvedProcessId = solvedProcessId;
-    }
-
-    public String getCreatingProcessId() {
-        return creatingProcessId;
-    }
-
-    @XmlElement
-    public void setCreatingProcessId(String creatingProcessId) {
-        this.creatingProcessId = creatingProcessId;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    @XmlElement
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    @XmlElement
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getDob() {
-        return dob;
-    }
-
-    @XmlElement
-    public void setDob(String dob) {
-        this.dob = dob;
-    }
-
-    public String getSsNum() {
-        return ssNum;
-    }
-
-    @XmlElement
-    public void setSsNum(String ssNum) {
-        this.ssNum = ssNum;
-    }
-
-    public String getDiagnosis() {
-        return diagnosis;
-    }
-
-    @XmlElement
-    public void setDiagnosis(String diagnosis) {
-        this.diagnosis = diagnosis;
-    }
-
-    public String getTreatment() {
-        return treatment;
-    }
-
-    @XmlElement
-    public void setTreatment(String treatment) {
-        this.treatment = treatment;
-    }
-
-    public String getPrescription() {
-        return prescription;
-    }
-
-    @XmlElement
-    public void setPrescription(String prescription) {
-        this.prescription = prescription;
-    }
-
-    @Override
-    public String toString() {
-        return "BlockchainBlock [createTime=" + String.valueOf(createTime) + "PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
-                + blockId + ", solvedProcesId=" + solvedProcessId + ", creatingProcessId="
-                + creatingProcessId + ", firstName=" + firstName + ", lastName=" + lastName
-                + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
-                + ", prescription=" + prescription + "]";
-    }
-
-}
 
 class CreateXml {
     // class to parse and create XML
@@ -410,9 +253,10 @@ class BlockchainNodeMulticast {
         new Thread(new MulticastWorker(newBlockchainBlock)).start();
     }
 
-        public static void setNumProcesses(int num) {
-            numProcesses = num;
-        }
+    public static void setNumProcesses(int num) {
+        numProcesses = num;
+    }
+
 
     class MulticastWorker implements Runnable {
         private String message;
@@ -692,7 +536,7 @@ class Keys {
     // calculate and return new private key to BlockchainNode
     private static Keys instance = null;
     // hash map to store private keys: <pid, public key>
-    private ConcurrentHashMap<Integer, PublicKey> publicKeyList;
+    private ConcurrentHashMap<Integer, byte[]> publicKeyList;
 
     private Keys() {
         publicKeyList = new ConcurrentHashMap<>();
@@ -705,12 +549,13 @@ class Keys {
         return instance;
     }
 
-    public void getKeys(BlockchainNode bn) {
+    public KeyPair getKeys(BlockchainNode bn) {
         // calculate public and private key here
         // add public key to publicKeyList
         // return private key to BlockchainNode
-        PublicKey pub = null;
-        PrivateKey priv = null;
+        byte[] pub = null;
+        byte[] priv = null;
+        KeyPair keyPair = null;
         try {
             // genrate secure random to use for key pair generation
             SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
@@ -719,9 +564,7 @@ class Keys {
             // initialize and create 512 bit key
             keyGen.initialize(1024, random);
             // generate the key pair
-            KeyPair pair = keyGen.generateKeyPair();
-            priv = pair.getPrivate();
-            pub = pair.getPublic();
+            keyPair = keyGen.generateKeyPair();
             } catch (Exception ex) {
             System.out.println("getPrivateKey exception: " + ex);
             ex.printStackTrace();
@@ -729,9 +572,8 @@ class Keys {
         // add public key to public key hash map
         publicKeyList.put(bn.getPid(), pub);
         // set BlockchainNode class public and private keys
-        bn.setPublicKey(pub);
-        bn.setPrivateKey(priv);
         System.out.println("public key list: " + publicKeyList.toString());
+        return keyPair;
     }
 
     public void multicastPublicKeys() {
@@ -770,4 +612,156 @@ class Ports {
     public int getUpdatedBlockchainPort(int pid) {
         return updatedBlockchainBasePort + pid;
     }
+}
+
+@XmlRootElement
+class BlockchainBlock implements Comparable<BlockchainBlock> {
+    private String createTime;
+    private String previousBlockHash;
+    private String randomString;
+    private String blockId;
+    private String solvedProcessId;
+    private String creatingProcessId;
+    private String firstName;
+    private String lastName;
+    private String dob;
+    private String ssNum;
+    private String diagnosis;
+    private String treatment;
+    private String prescription;
+
+    public int compareTo(BlockchainBlock other) {
+        if (this.blockId.equals(other.blockId) == true) {
+            return 0;
+        } else {
+            return 1;
+        }
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    @XmlElement
+    public void setCreateTime(String createTime) {
+        this.createTime = String.valueOf(createTime);
+    }
+
+    public String getPreviousBlockHash() {
+        return previousBlockHash;
+    }
+
+    @XmlElement
+    public void setPreviousBlockHash(String prevBlockHash) {
+        this.previousBlockHash = prevBlockHash;
+    }
+
+    public String getRandomString() {
+        return randomString;
+    }
+
+    @XmlElement
+    public void setRandomString(String randomString) {
+        this.randomString = randomString;
+    }
+
+    public String getBlockId() {
+        return blockId;
+    }
+
+    @XmlElement
+    public void setBlockId(String blockId) {
+        this.blockId = blockId;
+    }
+
+    public String getSolvedProcessId() {
+        return solvedProcessId;
+    }
+
+    @XmlElement
+    public void setSolvedProcessId(String solvedProcessId) {
+        this.solvedProcessId = solvedProcessId;
+    }
+
+    public String getCreatingProcessId() {
+        return creatingProcessId;
+    }
+
+    @XmlElement
+    public void setCreatingProcessId(String creatingProcessId) {
+        this.creatingProcessId = creatingProcessId;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    @XmlElement
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    @XmlElement
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getDob() {
+        return dob;
+    }
+
+    @XmlElement
+    public void setDob(String dob) {
+        this.dob = dob;
+    }
+
+    public String getSsNum() {
+        return ssNum;
+    }
+
+    @XmlElement
+    public void setSsNum(String ssNum) {
+        this.ssNum = ssNum;
+    }
+
+    public String getDiagnosis() {
+        return diagnosis;
+    }
+
+    @XmlElement
+    public void setDiagnosis(String diagnosis) {
+        this.diagnosis = diagnosis;
+    }
+
+    public String getTreatment() {
+        return treatment;
+    }
+
+    @XmlElement
+    public void setTreatment(String treatment) {
+        this.treatment = treatment;
+    }
+
+    public String getPrescription() {
+        return prescription;
+    }
+
+    @XmlElement
+    public void setPrescription(String prescription) {
+        this.prescription = prescription;
+    }
+
+    @Override
+    public String toString() {
+        return "BlockchainBlock [createTime=" + String.valueOf(createTime) + "PreviousBlockHash=" + previousBlockHash + ", RandomString=" + randomString + ", blockId="
+                + blockId + ", solvedProcesId=" + solvedProcessId + ", creatingProcessId="
+                + creatingProcessId + ", firstName=" + firstName + ", lastName=" + lastName
+                + ", dob=" + dob + ", ssNum=" + ssNum + ", diagnosis=" + diagnosis + ", treatment=" + treatment
+                + ", prescription=" + prescription + "]";
+    }
+
 }
