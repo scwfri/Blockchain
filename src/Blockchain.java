@@ -17,8 +17,11 @@
 *  https://www.mkyong.com/java/jaxb-hello-world-example/
 ----------------------------------------------------------*/
 
-// TODO: verify blocks
+// TODO: verify block class/method
 // TODO: have pid 0 export to file
+// TODO: sign keys with signature
+// TODO: process 2 starts process multcast public keys
+// TODO: some sort of store for public keys
 
 import java.util.*;
 import java.io.*;
@@ -60,6 +63,7 @@ class BlockchainNode {
     private int updatedBlockchainPort;
     private int unverifiedBlockPort;
     private int publicKeyServerPort;
+    private ConcurrentHashMap<Integer, PublicKey> publicKeyList;
 
     BlockchainNode(int pid) {
         // set pid of BlockchainNode
@@ -723,6 +727,10 @@ class Keys {
         // set BlockchainNode class public and private keys
         bn.setPublicKey(pub);
         bn.setPrivateKey(priv);
+        System.out.println("public key list: " + publicKeyList.toString());
+    }
+
+    public void multicastPublicKeys() {
     }
 }
 
