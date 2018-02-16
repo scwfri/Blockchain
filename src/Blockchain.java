@@ -56,6 +56,7 @@ class BlockchainNode {
     private int numProcesses = 3; // number of processes
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
+    private PublicKeyStore publicKeyStore;
     private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
     private KeyPair keyPair;
     private int pid;
@@ -80,6 +81,11 @@ class BlockchainNode {
         this.startServerandConsumer();
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
+            try {
+                Thread.sleep(10000);
+            } catch (Exception ex) {
+                System.out.println("interrupt exception: " + ex);
+            }
             new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
 
             // base64 encoded private key
@@ -94,6 +100,7 @@ class BlockchainNode {
     }
 
     public void startServerandConsumer() {
+        publicKeyStore = new PublicKeyStore(this.getPid());
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         // intialize threads
@@ -257,12 +264,14 @@ class BlockchainNodeMulticast {
     private static int numProcesses;
     private String serverName = "localhost";
     private int q_len = 6;
+    private int basePort;
     private String newBlock;
     private String xmlToSend;
     private BlockchainNode originNode;
 
     BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
         // received in XML for new Block
+        basePort = Ports.getInstance().getUnverifiedBlockBasePort();
         newBlock = input;
         new Thread(new MulticastWorker(input, bcNode)).start();
         originNode = bcNode;
@@ -270,10 +279,12 @@ class BlockchainNodeMulticast {
 
     BlockchainNodeMulticast(BlockchainBlock newBlockchainBlock) {
         //newBlock = newBlockchainBlock;
+        basePort = Ports.getInstance().getUnverifiedBlockBasePort();
         new Thread(new MulticastWorker(newBlockchainBlock)).start();
     }
 
     BlockchainNodeMulticast(int pid, PublicKey pub) {
+        basePort = Ports.getInstance().getPublicKeyServerBasePort();
         new Thread(new MulticastWorker(pid, pub)).start();
     }
 
@@ -284,7 +295,6 @@ class BlockchainNodeMulticast {
     class MulticastWorker implements Runnable {
         private String message;
         private Socket sock;
-        private int port;
         private BlockchainBlock newBlockchainBlock;
 
         private MulticastWorker(String input, BlockchainNode originNode) {
@@ -305,7 +315,6 @@ class BlockchainNodeMulticast {
             xmlToSend = createXml.marshalFromBlockchainBlock(newBlock);
         }
         private MulticastWorker(int pid, PublicKey pub) {
-            // TODO: send public key to all processes
             CreateXml createXml = new CreateXml();
             xmlToSend = createXml.marshalPublicKey();
         }
@@ -314,7 +323,8 @@ class BlockchainNodeMulticast {
             try {
                 for (int i = 0; i < numProcesses; i++) {
                     // multicast to all blockchain servers
-                    port = Ports.getInstance().getUnverifiedBlockPort(i);
+                    // TODO: this is sending verified blocks on unverified port
+                    int port = basePort + i;
                     sock = new Socket(serverName, port);
                     PrintStream out = new PrintStream(sock.getOutputStream());
                     out.println(xmlToSend);
@@ -336,14 +346,14 @@ class VerifyBlockchain {
 class PublicKeyStore implements Runnable {
     // TODO: should we just add incoming pid/pub pairs to keyHash???
     // reads in public key
-    private ConcurrentHashMap<Integer, byte[]> pubKeyHashMap;
-    private int port;
+    private static ConcurrentHashMap<Integer, byte[]> pubKeyHashMap;
+    private static int port;
     private Socket sock;
     int q_len = 6;
 
-    private void PublicKeyStore(int p) {
+    public PublicKeyStore(int p) {
         pubKeyHashMap = new ConcurrentHashMap<>();
-        port = p;
+        port = Ports.getInstance().getPublicKeyServerPort(p);
     }
 
     public void run() {
@@ -555,7 +565,7 @@ class UnverifiedBlockConsumer implements Runnable {
             } catch (IOException ex) {
                 System.out.println(ex);
             } catch (JAXBException e) {
-                System.out.println("JAXB exception");
+                System.out.println("JAXB unverified block worker exception");
                 System.out.println(e);
             }
         }
@@ -729,12 +739,24 @@ class Ports {
         return publicKeyServerBasePort + pid;
     }
 
+    public int getPublicKeyServerBasePort() {
+        return publicKeyServerBasePort;
+    }
+
     public int getUnverifiedBlockPort(int pid) {
         return unverifiedBlockBasePort + pid;
     }
 
+    public int getUnverifiedBlockBasePort() {
+        return unverifiedBlockBasePort;
+    }
+
     public int getUpdatedBlockchainPort(int pid) {
         return updatedBlockchainBasePort + pid;
+    }
+
+    public int getUpdatedBlockchainBasePort() {
+        return updatedBlockchainBasePort;
     }
 }
 
