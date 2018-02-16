@@ -79,6 +79,10 @@ class BlockchainNode {
         BlockchainNodeMulticast.setNumProcesses(numProcesses);
         this.getInstanceKeys();
         this.startServerandConsumer();
+        // if this is process # 2, multicast public keys to other nodes
+        if (this.pid == 2) {
+            Keys.getInstance().multicastPublicKeys();
+        }
     }
 
     private void getInstanceKeys() {
@@ -731,6 +735,7 @@ class Keys {
     }
 
     public void multicastPublicKeys() {
+        // TODO: multicast all public keys to other nodes
     }
 }
 
