@@ -80,7 +80,7 @@ class BlockchainNode {
         this.startServerandConsumer();
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
-            Keys.getInstance().multicastPublicKeys();
+            new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
 
             // base64 encoded private key
             //priv = keyPair.getPrivate().getEncoded();
@@ -202,6 +202,26 @@ class CreateXml {
 
     }
 
+    public String marshalPublicKey(int pid, PublicKey pub) {
+        // creat XML from public key
+        HashMap<Integer, PublicKey> pubKeyMap = new HashMap<>();
+        pubKeyMap.put(pid, pub);
+        try {
+            JAXBContext jaxbContext = JAXBContext.newInstance(HashMap.class);
+            Marshaller marshaller = jaxbContext.createMarshaller();
+            StringWriter sw = new StringWriter();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            marshaller.marshal(pubKeyMap, sw);
+            System.out.println("marshalled new block: " + sw.toString());
+            return sw.toString();
+        } catch (Exception ex) {
+            System.out.println("CreateXml exception");
+            System.out.println(ex);
+            ex.printStackTrace();
+            return "";
+        }
+    }
+
     class ParseText {
         private String firstName;
         private String lastName;
@@ -253,10 +273,13 @@ class BlockchainNodeMulticast {
         new Thread(new MulticastWorker(newBlockchainBlock)).start();
     }
 
+    BlockchainNodeMulticast(int pid, PublicKey pub) {
+        new Thread(new MulticastWorker(pid, pub)).start();
+    }
+
     public static void setNumProcesses(int num) {
         numProcesses = num;
     }
-
 
     class MulticastWorker implements Runnable {
         private String message;
@@ -281,6 +304,11 @@ class BlockchainNodeMulticast {
             CreateXml createXml = new CreateXml();
             xmlToSend = createXml.marshalFromBlockchainBlock(newBlock);
         }
+        private MulticastWorker(int pid, PublicKey pub) {
+            // TODO: send public key to all processes
+            CreateXml createXml = new CreateXml();
+            xmlToSend = createXml.marshalPublicKey(pid, pub);
+        }
 
         public void run() {
             try {
@@ -295,6 +323,70 @@ class BlockchainNodeMulticast {
             } catch (IOException ex) {
                 System.out.println("multicast worker error");
                 System.out.println(ex);
+            }
+        }
+    }
+}
+
+class VerifyBlockchain {
+    // TODO: verifies blockchain
+}
+
+class PublicKeyStore implements Runnable {
+    // reads in public key
+    private ConcurrentHashMap<Integer, PublicKey> pubKeyHashMap;
+    private int port;
+    private Socket sock;
+    int q_len = 6;
+
+    private void PublicKeyStore(int p) {
+        pubKeyHashMap = new ConcurrentHashMap<>();
+        port = p;
+    }
+
+    public void run() {
+        try {
+            ServerSocket servSock = new ServerSocket(port, q_len);
+            while (true) {
+                sock = servSock.accept();
+                new Thread(new PublicKeyStoreWorker(sock)).start();
+            }
+        } catch (Exception ex) {
+            System.out.println("PublicKeyStore error: " + ex);
+            ex.printStackTrace();
+        }
+    }
+
+    class PublicKeyStoreWorker implements Runnable {
+        private Socket socket;
+
+        public PublicKeyStoreWorker(Socket s) {
+            socket = s;
+        }
+
+        public void run() {
+            HashMap<Integer, PublicKey> pubKeyMap = new HashMap<>();
+            try {
+                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String input = "";
+                StringBuilder sb = new StringBuilder();
+                do {
+                    input = in.readLine();
+                    if (input != null) {
+                        sb.append(input);
+                    }
+                } while (input != null);
+
+                // TODO: figure out how to get pid in here
+                // create reader object to unmarshal
+                StringReader reader = new StringReader(sb.toString());
+                JAXBContext jaxbContext = JAXBContext.newInstance(HashMap.class);
+                Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+                pubKeyMap = (HashMap) unmarshaller.unmarshal(reader);
+                reader.close();
+            } catch (Exception ex) {
+                System.out.println("PublicKeyStoreWorker error: " + ex);
+                ex.printStackTrace();
             }
         }
     }
@@ -535,11 +627,8 @@ class Keys {
     // provide public key to all clients
     // calculate and return new private key to BlockchainNode
     private static Keys instance = null;
-    // hash map to store private keys: <pid, public key>
-    private ConcurrentHashMap<Integer, byte[]> publicKeyList;
 
     private Keys() {
-        publicKeyList = new ConcurrentHashMap<>();
     }
 
     public static synchronized Keys getInstance() {
@@ -570,14 +659,8 @@ class Keys {
             ex.printStackTrace();
         }
         // add public key to public key hash map
-        publicKeyList.put(bn.getPid(), pub);
         // set BlockchainNode class public and private keys
-        System.out.println("public key list: " + publicKeyList.toString());
         return keyPair;
-    }
-
-    public void multicastPublicKeys() {
-        // TODO: multicast all public keys to other nodes
     }
 }
 
