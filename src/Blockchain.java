@@ -82,7 +82,7 @@ class BlockchainNode {
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
             try {
-                Thread.sleep(10000);
+                Thread.sleep(3000);
             } catch (Exception ex) {
                 System.out.println("interrupt exception: " + ex);
             }
@@ -104,6 +104,7 @@ class BlockchainNode {
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         // intialize threads
+        new Thread(publicKeyStore).start();
         new Thread(unverifiedBlockServer).start();
         new Thread(unverifiedBlockConsumer).start();
     }
@@ -285,7 +286,7 @@ class BlockchainNodeMulticast {
 
     BlockchainNodeMulticast(int pid, PublicKey pub) {
         basePort = Ports.getInstance().getPublicKeyServerBasePort();
-        new Thread(new MulticastWorker(pid, pub)).start();
+        new Thread(new MulticastWorker(pub)).start();
     }
 
     public static void setNumProcesses(int num) {
@@ -314,17 +315,20 @@ class BlockchainNodeMulticast {
             CreateXml createXml = new CreateXml();
             xmlToSend = createXml.marshalFromBlockchainBlock(newBlock);
         }
-        private MulticastWorker(int pid, PublicKey pub) {
+        private MulticastWorker(PublicKey pub) {
             CreateXml createXml = new CreateXml();
             xmlToSend = createXml.marshalPublicKey();
+            System.out.println("public key xml to send: " + xmlToSend);
         }
 
         public void run() {
             try {
-                for (int i = 0; i < numProcesses; i++) {
+                for (int processId = 0; processId < numProcesses; processId++) {
                     // multicast to all blockchain servers
                     // TODO: this is sending verified blocks on unverified port
-                    int port = basePort + i;
+                    int port = basePort + processId;
+                    System.out.println("Sending to public key port: " + port);
+                    System.out.println("serverName: " + serverName);
                     sock = new Socket(serverName, port);
                     PrintStream out = new PrintStream(sock.getOutputStream());
                     out.println(xmlToSend);
@@ -333,6 +337,7 @@ class BlockchainNodeMulticast {
             } catch (IOException ex) {
                 System.out.println("multicast worker error");
                 System.out.println(ex);
+                ex.printStackTrace();
             }
         }
     }
@@ -347,13 +352,14 @@ class PublicKeyStore implements Runnable {
     // TODO: should we just add incoming pid/pub pairs to keyHash???
     // reads in public key
     private static ConcurrentHashMap<Integer, byte[]> pubKeyHashMap;
-    private static int port;
+    private int port;
     private Socket sock;
     int q_len = 6;
 
     public PublicKeyStore(int p) {
         pubKeyHashMap = new ConcurrentHashMap<>();
         port = Ports.getInstance().getPublicKeyServerPort(p);
+        System.out.println("public key server port: " + port);
     }
 
     public void run() {
