@@ -334,9 +334,8 @@ class VerifyBlockchain {
 
 // class to receive marshalled public key
 class PublicKeyStore implements Runnable {
-    // TODO: should we just add incoming pid/pub pairs to keyHash???
     // reads in public key
-    private ConcurrentHashMap<Integer, byte[]> pubKeyHashMap;
+    private ConcurrentHashMap<Integer, PublicKey> pubKeyHashMap;
     private int port;
     private Socket sock;
     int q_len = 6;
