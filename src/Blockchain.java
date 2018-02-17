@@ -20,8 +20,6 @@
 // TODO: verify block class/method
 // TODO: have pid 0 export to file
 // TODO: sign keys with signature
-// TODO: process 2 starts process multcast public keys
-// TODO: some sort of store for public keys
 
 import java.util.*;
 import java.io.*;
@@ -352,7 +350,6 @@ class VerifyBlockchain {
 
 // class to receive marshalled public key
 class PublicKeyStore implements Runnable {
-    // TODO: should we just add incoming pid/pub pairs to keyHash???
     // reads in public key
     private static ConcurrentHashMap<Integer, byte[]> pubKeyHashMap;
     private int port;
@@ -641,7 +638,6 @@ class UnverifiedBlockConsumer implements Runnable {
                     // and add to new BlockchainBlcok
                     blockchainNode.addBlockchainBlock(newBlock);
                     System.out.println("unverified queue after remove: " + unverifiedQueue);
-                    // TODO: verify new block?
                     System.out.print("verified block queue: ");
                     printQueue();
                     return;
