@@ -211,10 +211,11 @@ class CreateXml {
 
     }
 
-    public String marshalPublicKey() {
+    public String marshalPublicKey(int pid, PublicKey pub) {
         // creat XML from public key
-        // keyHash instance will already contain entry for this process
-        KeyHash keyHash = KeyHash.getInstance();
+        KeyHash keyHash = new KeyHash();
+        keyHash.setPid(pid);
+        keyHash.setPublicKey(pub.getEncoded());
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(KeyHash.class);
             Marshaller marshaller = jaxbContext.createMarshaller();
@@ -287,7 +288,7 @@ class BlockchainNodeMulticast {
 
     BlockchainNodeMulticast(int pid, PublicKey pub) {
         basePort = Ports.getInstance().getPublicKeyServerBasePort();
-        new Thread(new MulticastWorker(pub)).start();
+        new Thread(new MulticastWorker(pid, pub)).start();
     }
 
     public static void setNumProcesses(int num) {
@@ -316,9 +317,10 @@ class BlockchainNodeMulticast {
             CreateXml createXml = new CreateXml();
             xmlToSend = createXml.marshalFromBlockchainBlock(newBlock);
         }
-        private MulticastWorker(PublicKey pub) {
+
+        private MulticastWorker(int pid, PublicKey pub) {
             CreateXml createXml = new CreateXml();
-            xmlToSend = createXml.marshalPublicKey();
+            xmlToSend = createXml.marshalPublicKey(pid, pub);
             System.out.println("public key xml to send: " + xmlToSend);
         }
 
@@ -385,7 +387,7 @@ class PublicKeyStore implements Runnable {
         }
 
         public void run() {
-            KeyHash pubKeyHash = KeyHash.getInstance();
+            KeyHash pubKeyHash = new KeyHash();
             try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = "";
@@ -403,12 +405,13 @@ class PublicKeyStore implements Runnable {
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
                 pubKeyHash = (KeyHash) unmarshaller.unmarshal(reader);
                 System.out.println("Received public key: " + pubKeyHash.toString());
+                pubKeyHashMap.put(pubKeyHash.getPid(), pubKeyHash.getPublicKey());
                 reader.close();
-                // TODO: send this process public hash, if this.pid not in hashmap
-                //if (!KeyHash.getInstance().has(blockchainNode.getPid())) {
-                    //System.out.println("this process pid not in keylist");
-                    //new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
-                //}
+                // TODO: send public key for this process, if this.pid not in hashmap
+                if (pubKeyHash.getPid() == 2) {
+                    System.out.println("this process pid not in keylist");
+                    new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
+                }
             } catch (Exception ex) {
                 System.out.println("PublicKeyStoreWorker error: " + ex);
                 ex.printStackTrace();
@@ -758,8 +761,6 @@ class Keys {
             System.out.println("getPrivateKey exception: " + ex);
             ex.printStackTrace();
         }
-        // add public key to public key hash map
-        KeyHash.getInstance().addPublicKey(bn.getPid(), keyPair.getPublic().getEncoded());
         // set BlockchainNode class public and private keys
         return keyPair;
     }
@@ -767,42 +768,33 @@ class Keys {
 
 @XmlRootElement
 class KeyHash {
-    private static KeyHash instance = null;
-    private ConcurrentHashMap<Integer, byte[]> publicKeyList;
+    private int pid;
+    private byte[] publicKey;
 
-    private KeyHash() {
-        publicKeyList = new ConcurrentHashMap<>();
+    public KeyHash() {
     }
 
-    public static KeyHash getInstance() {
-        if (instance == null) {
-            instance = new KeyHash();
-        }
-        return instance;
+    public int getPid() {
+        return pid;
     }
 
-    public boolean has(Integer pid) {
-        return publicKeyList.containsKey(pid);
-    }
-
-    public void addPublicKey(int pid, byte[] pub) {
-        publicKeyList.put(pid, pub);
-    }
-
-    public ConcurrentHashMap<Integer, byte[]> getPublicKeyList() {
-        return publicKeyList;
+    public byte[] getPublicKey() {
+        return publicKey;
     }
 
     @XmlElement
-    public void setPublicKeyList(ConcurrentHashMap<Integer, byte[]> publicKeyList) {
-        this.publicKeyList = publicKeyList;
+    public void setPid(int pid) {
+        this.pid = pid;
+    }
+
+    @XmlElement
+    public void setPublicKey(byte[] publicKey) {
+        this.publicKey = publicKey;
     }
 
     @Override
     public String toString() {
-        return "KeyHash{" +
-                "publicKeyList=" + publicKeyList +
-                '}';
+        return "pid: " + pid + "\npublic key: " + publicKey;
     }
 }
 
