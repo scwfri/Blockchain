@@ -56,11 +56,12 @@ class BlockchainNode {
     private int numProcesses = 3; // number of processes
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
+    private VerifiedBlockServer verifiedBlockServer;
     private PublicKeyStore publicKeyStore;
     private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
     private KeyPair keyPair;
     private int pid;
-    private int updatedBlockchainPort;
+    private int verifiedBlockPort;
     private int unverifiedBlockPort;
     private int publicKeyServerPort;
     private ConcurrentHashMap<Integer, PublicKey> publicKeyList;
@@ -100,9 +101,11 @@ class BlockchainNode {
     }
 
     public void startServerandConsumer() {
+        // store instance of public key store, unverified block server, and unverified block consumer
         publicKeyStore = new PublicKeyStore(this.getPid());
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
+        verifiedBlockServer = new VerifiedBlockServer(this);
         // intialize threads
         new Thread(publicKeyStore).start();
         new Thread(unverifiedBlockServer).start();
@@ -126,7 +129,7 @@ class BlockchainNode {
     private void setPorts() {
         // get required port numbers, stored in BlockchainNode instance
         unverifiedBlockPort = Ports.getInstance().getUnverifiedBlockPort(pid);
-        updatedBlockchainPort = Ports.getInstance().getUpdatedBlockchainPort(pid);
+        verifiedBlockPort = Ports.getInstance().getVerifiedBlockPort(pid);
         publicKeyServerPort = Ports.getInstance().getPublicKeyServerPort(pid);
     }
 
@@ -411,6 +414,82 @@ class PublicKeyStore implements Runnable {
     }
 }
 
+class VerifiedBlockServer implements Runnable {
+    private int pid;
+    private int port;
+    private int q_len = 6;
+    private Socket sock;
+    private BlockchainNode blockchainNode;
+
+    public VerifiedBlockServer(BlockchainNode bcNode) {
+        // empty constructor for now
+        pid = bcNode.getPid();
+        port = Ports.getInstance().getVerifiedBlockPort(pid);
+        blockchainNode = bcNode;
+    }
+
+    public void run() {
+        // run method
+        try {
+            ServerSocket servSock = new ServerSocket(port, q_len);
+            while (true) {
+                // infinite loop- keep waiting for multicast client to connect
+                sock = servSock.accept(); // blocks
+                // once connected, spawn unverifiedblockworker thread to handle
+                new Thread(new VerifiedBlockWorker(sock)).start();
+            }
+        } catch (IOException ex) {
+            System.out.println(ex);
+        }
+    }
+
+    class VerifiedBlockWorker implements Runnable {
+        private Socket sock;
+
+        private VerifiedBlockWorker(Socket s) {
+            sock = s;
+        }
+
+        public void run() {
+            // run method implementation
+            try {
+                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String input = "";
+                StringBuilder sb = new StringBuilder();
+                do {
+                    input = in.readLine();
+                    if (input != null) {
+                        sb.append(input);
+                    }
+                } while (input != null);
+                // create reader object to unmarshal
+                StringReader reader = new StringReader(sb.toString());
+                JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+                Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+                BlockchainBlock newBlock = (BlockchainBlock) unmarshaller.unmarshal(reader);
+
+                //PrintStream out = new PrintStream(new FileOutputStream("./xmlExample.xml"));
+                //out.print(sb.toString());
+                reader.close();
+
+                // add to unverifiedBlockQueue
+                    System.out.println("received new solved block");
+                    System.out.println("newly verified blockchain block: " + newBlock.toString());
+                    // block has been completed
+                    // so remove from unverified queue
+                    UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
+                    // and add to new BlockchainBlcok
+                    blockchainNode.addBlockchainBlock(newBlock);
+                    // TODO: verify new block?
+                    System.out.print("verified block queue: ");
+            } catch (Exception ex) {
+                System.out.println("Verified bock worker exception: " + ex);
+                ex.printStackTrace();
+            }
+        }
+    }
+}
+
 class UnverifiedBlockServer implements Runnable {
     // read data in from text file
     // tell BlockchainNodeList class to multicast to everyone
@@ -499,7 +578,7 @@ class UnverifiedBlockConsumer implements Runnable {
         return false;
     }
 
-    private void removeFromUnverifiedQueue(String blockId) {
+    public static void removeFromUnverifiedQueue(String blockId) {
         // iterate through unverifiedQueue, remove when matches blockId
         Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
         while (iter.hasNext()) {
@@ -548,7 +627,6 @@ class UnverifiedBlockConsumer implements Runnable {
                     // if null random string, this is a new block
                     // add to unverified queue
                     System.out.println("received new unsolved block");
-                    removeFromUnverifiedQueue(newBlock.getBlockId());
                     unverifiedQueue.add(newBlock);
                     solve(newBlock);
                     System.out.print("unverified block queue: ");
@@ -619,7 +697,7 @@ class UnverifiedBlockConsumer implements Runnable {
             new BlockchainNodeMulticast(workerBlock);
         }
 
-        private void printQueue(){
+        public void printQueue(){
             System.out.println("PRINT QUEUE:");
             System.out.println(unverifiedQueue.toString());
         }
@@ -726,12 +804,12 @@ class Ports {
     private static Ports instance = null;
     private int publicKeyServerBasePort;
     private int unverifiedBlockBasePort;
-    private int updatedBlockchainBasePort;
+    private int verifiedBlockBasePort;
 
     private Ports() {
         publicKeyServerBasePort = 4701;
         unverifiedBlockBasePort = 4820;
-        updatedBlockchainBasePort = 4930;
+        verifiedBlockBasePort = 4930;
     }
 
     public static synchronized Ports getInstance() {
@@ -757,12 +835,12 @@ class Ports {
         return unverifiedBlockBasePort;
     }
 
-    public int getUpdatedBlockchainPort(int pid) {
-        return updatedBlockchainBasePort + pid;
+    public int getVerifiedBlockPort(int pid) {
+        return verifiedBlockBasePort + pid;
     }
 
-    public int getUpdatedBlockchainBasePort() {
-        return updatedBlockchainBasePort;
+    public int getVerifiedBlockBasePort() {
+        return verifiedBlockBasePort;
     }
 }
 
