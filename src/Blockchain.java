@@ -100,7 +100,7 @@ class BlockchainNode {
 
     public void startServerandConsumer() {
         // store instance of public key store, unverified block server, and unverified block consumer
-        publicKeyStore = new PublicKeyStore(this.getPid());
+        publicKeyStore = new PublicKeyStore(this.getPid(), this);
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         verifiedBlockServer = new VerifiedBlockServer(this);
@@ -355,11 +355,13 @@ class PublicKeyStore implements Runnable {
     private int port;
     private Socket sock;
     int q_len = 6;
+    private BlockchainNode blockchainNode;
 
-    public PublicKeyStore(int p) {
+    public PublicKeyStore(int p, BlockchainNode bc) {
         pubKeyHashMap = new ConcurrentHashMap<>();
         port = Ports.getInstance().getPublicKeyServerPort(p);
         System.out.println("public key server port: " + port);
+        blockchainNode = bc;
     }
 
     public void run() {
@@ -395,14 +397,18 @@ class PublicKeyStore implements Runnable {
                     }
                 } while (input != null);
 
-                // TODO: figure out how to get pid in here
                 // create reader object to unmarshal
                 StringReader reader = new StringReader(sb.toString());
                 JAXBContext jaxbContext = JAXBContext.newInstance(KeyHash.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
                 pubKeyHash = (KeyHash) unmarshaller.unmarshal(reader);
-                System.out.println("pub key hash from worker: " + pubKeyHash.toString());
+                System.out.println("Received public key: " + pubKeyHash.toString());
                 reader.close();
+                // TODO: send this process public hash, if this.pid not in hashmap
+                //if (!KeyHash.getInstance().has(blockchainNode.getPid())) {
+                    //System.out.println("this process pid not in keylist");
+                    //new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
+                //}
             } catch (Exception ex) {
                 System.out.println("PublicKeyStoreWorker error: " + ex);
                 ex.printStackTrace();
@@ -516,7 +522,6 @@ class UnverifiedBlockServer implements Runnable {
                 input = userInput.readLine();
                 if (input.indexOf("R") != -1) {
                     BufferedReader fr = new BufferedReader(new FileReader("./" + input.substring(2)));
-                    System.out.println("filename: " + "./" + input.substring(2));
                     String line = "";
                     do {
                         line = fr.readLine();
@@ -544,11 +549,9 @@ class UnverifiedBlockConsumer implements Runnable {
     private BlockchainNode blockchainNode;
 
     UnverifiedBlockConsumer(int p, BlockchainNode bcNode) {
-        System.out.println("unverifiedblockconsumer: " + bcNode.toString());
         // get instance of new SingleThread executor
         port = p;
         unverifiedQueue = new PriorityBlockingQueue<>();
-        System.out.println("starting unverified block consumer");
         blockchainNode = bcNode;
     }
 
@@ -776,6 +779,10 @@ class KeyHash {
             instance = new KeyHash();
         }
         return instance;
+    }
+
+    public boolean has(Integer pid) {
+        return publicKeyList.containsKey(pid);
     }
 
     public void addPublicKey(int pid, byte[] pub) {
