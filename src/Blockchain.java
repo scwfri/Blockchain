@@ -83,7 +83,7 @@ class BlockchainNode {
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(100);
             } catch (Exception ex) {
                 System.out.println("interrupt exception: " + ex);
             }
