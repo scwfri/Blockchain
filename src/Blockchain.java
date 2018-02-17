@@ -470,15 +470,16 @@ class VerifiedBlockServer implements Runnable {
                 reader.close();
 
                 // add to unverifiedBlockQueue
-                    System.out.println("received new solved block");
-                    System.out.println("newly verified blockchain block: " + newBlock.toString());
-                    // block has been completed
-                    // so remove from unverified queue
-                    UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
-                    // and add to new BlockchainBlcok
-                    blockchainNode.addBlockchainBlock(newBlock);
-                    // TODO: verify new block?
-                    System.out.print("verified block queue: ");
+                System.out.println("received new solved block");
+                System.out.println("newly verified blockchain block: " + newBlock.toString());
+                // block has been completed
+                // so remove from unverified queue
+                UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
+                // and add to new BlockchainBlcok
+                // TODO: check to make sure block is not already added??
+                blockchainNode.addBlockchainBlock(newBlock);
+                // TODO: verify new block?
+                System.out.print("verified block queue: ");
             } catch (Exception ex) {
                 System.out.println("Verified bock worker exception: " + ex);
                 ex.printStackTrace();
@@ -510,6 +511,7 @@ class UnverifiedBlockServer implements Runnable {
             Thread.sleep(5);
             BufferedReader userInput;
             userInput = new BufferedReader(new InputStreamReader(System.in));
+            // TODO: make this read all lines from specified file
             System.out.print("Enter R to read file, q to quit> ");
             BufferedReader fr = new BufferedReader(new FileReader(file));
             do {
