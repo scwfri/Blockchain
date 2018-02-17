@@ -504,22 +504,24 @@ class UnverifiedBlockServer implements Runnable {
     public void run() {
         //run method
         // read data in from text file
-        StringBuilder sb = new StringBuilder();
         try {
             String input = "";
-            String file = "./BlockInput" + pid + ".txt";
+            String file = "";
+            //String file = "./BlockInput" + pid + ".txt";
             Thread.sleep(5);
             BufferedReader userInput;
             userInput = new BufferedReader(new InputStreamReader(System.in));
-            // TODO: make this read all lines from specified file
-            System.out.print("Enter R to read file, q to quit> ");
-            BufferedReader fr = new BufferedReader(new FileReader(file));
+            System.out.print("Enter R <filename> to read file, q to quit> ");
             do {
                 input = userInput.readLine();
-                if (input.equals("R")) {
-                    String line = fr.readLine();
-                    sb.append(line);
-                    new BlockchainNodeMulticast(line.toString(), originNode);
+                if (input.indexOf("R") != -1) {
+                    BufferedReader fr = new BufferedReader(new FileReader("./" + input.substring(2)));
+                    System.out.println("filename: " + "./" + input.substring(2));
+                    String line = "";
+                    do {
+                        line = fr.readLine();
+                        new BlockchainNodeMulticast(line.toString(), originNode);
+                    } while (line != null);
                 }
             } while (input.indexOf("quit") == -1);
         } catch (IOException ex) {
