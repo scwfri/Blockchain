@@ -17,9 +17,7 @@
 *  https://www.mkyong.com/java/jaxb-hello-world-example/
 ----------------------------------------------------------*/
 
-// TODO: verify block class/method
 // TODO: have pid 0 export to file
-// TODO: sign keys with signature
 
 import java.util.*;
 import java.io.*;
@@ -44,7 +42,7 @@ class Blockchain {
     public static void main(String[] args) {
         int q_len = 6; // queue length
         int pid = ((args.length < 1) ? 0 : Integer.parseInt(args[0]));
-        BlockchainNode bc = new BlockchainNode(pid);
+        BlockchainNode bc = new BlockchainNode(pid); // create new blockchain node instance
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
     }
@@ -54,14 +52,14 @@ class BlockchainNode {
     private int numProcesses = 3; // number of processes
     private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
-    private VerifiedBlockServer verifiedBlockServer;
-    private PublicKeyStore publicKeyStore;
+    private VerifiedBlockServer verifiedBlockServer; // verified block server, to manage verified blocks
+    private PublicKeyStore publicKeyStore; // to store public keys
     private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
-    private KeyPair keyPair;
-    private int pid;
-    private int verifiedBlockPort;
-    private int unverifiedBlockPort;
-    private int publicKeyServerPort;
+    private KeyPair keyPair; // this blockchain node's public and private keys
+    private int pid; // process id of this node
+    private int verifiedBlockPort; // port number for this node's verified block server
+    private int unverifiedBlockPort; // unverified block server port number for this node
+    private int publicKeyServerPort; // port number for this nodes public key server
 
     BlockchainNode(int pid) {
         // set pid of BlockchainNode
@@ -75,17 +73,23 @@ class BlockchainNode {
 
         // tell BlockchainNodeMulticast the number of processes
         BlockchainNodeMulticast.setNumProcesses(numProcesses);
+        // create public, private keys
         this.getInstanceKeys();
+        // start various servers and consumers for blockchain workflow
         this.startServerandConsumer();
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
             try {
-                Thread.sleep(100);
+                // sleep for 1 sec.. allow all nodes to start
+                Thread.sleep(1000);
             } catch (Exception ex) {
                 System.out.println("interrupt exception: " + ex);
             }
+            // send pid #2 public key to other nodes
+            // this will kick off other nodes sending their keys to all nodes
             new BlockchainNodeMulticast(getPid(), getPublicKey());
 
+            // NOTES BELOW
             // base64 encoded private key
             //priv = keyPair.getPrivate().getEncoded();
             //base64 encoded public key
@@ -94,16 +98,20 @@ class BlockchainNode {
     }
 
     private void getInstanceKeys() {
+        // get keypair for this node, store in keyPair
         keyPair = Keys.getInstance().getKeys(this);
     }
 
     public void startServerandConsumer() {
         // store instance of public key store, unverified block server, and unverified block consumer
         publicKeyStore = new PublicKeyStore(this.getPid(), this);
+        // create new unverified block server
         unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
+        // create new unverified block consumer
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
+        // create new verified block server
         verifiedBlockServer = new VerifiedBlockServer(this);
-        // intialize threads
+        // intialize threads for all servers and consumers
         new Thread(publicKeyStore).start();
         new Thread(unverifiedBlockServer).start();
         new Thread(unverifiedBlockConsumer).start();
@@ -111,12 +119,42 @@ class BlockchainNode {
     }
 
     public void addBlockchainBlock(BlockchainBlock bcBlock) {
+        // method to add new block to this nodes copy of the blockchain block
         blockchainStack.add(bcBlock);
         System.out.println("BlockchainStack:" + blockchainStack.toString());
     }
 
+    public void exportBlockchainToFile() {
+        // get old file
+        File old = new File("./BlockchainLedger.xml");
+        // and delete
+        old.delete();
+        // create new file to write to
+        File file = new File("./BlockchainLedger.xml");
+        try {
+            // new file writer so we can write to file
+            FileWriter f = new FileWriter(file, false);
+            // write new block to file
+            for (BlockchainBlock b : blockchainStack) {
+                CreateXml cXml = new CreateXml();
+                f.write(cXml.marshalFromBlockchainBlock(b));
+                f.write("\n");
+            }
+            // close the file
+            f.close();
+        } catch (IOException ex) {
+            // catch any exceptions, print to console
+            System.out.println("Error printing to disk: " + ex);
+            ex.printStackTrace();
+        }
+    }
+
+    // this method returns hash of the last block in blockchain
+    // helper method to add last hash to new unverified block
     public String peekLastHash() {
+        // if there are blockchains in stack
         if (blockchainStack.size() > 0) {
+            // return the the hash of it
             return CalcHashHelper.calc(blockchainStack.poll());
         } else {
             // value we are looking to match in work hash with random string
@@ -131,61 +169,86 @@ class BlockchainNode {
         publicKeyServerPort = Ports.getInstance().getPublicKeyServerPort(pid);
     }
 
+    // method to set pid of this node
     private void setPid(int pnum) {
         pid = pnum;
     }
 
+    // returns public key of this node
     public PublicKey getPublicKey() {
         return keyPair.getPublic();
     }
 
+    // returns private key of this node
+    // I realize this is not the most "secure" way of doing this, but its a workaround for now
     public PrivateKey getPrivateKey() {
         return keyPair.getPrivate();
     }
 
+    // reutrn pid of this node
     public int getPid() {
         return pid;
     }
 
+    // toString method
     public String toString() {
         return ("pid of this BlockchainNode: " + pid);
     }
 }
 
 
+// this class parses and creates xml to be marshalled and sent around
 class CreateXml {
-    // class to parse and create XML
+    // own instance of ParseText, which parses string input
+    // TODO: should this be static??
     private static ParseText pt;
 
     public CreateXml() {
     }
 
+    // method to return signed data
+    // takes in data, and the key to sign it with
     private static byte[] signData(byte[] data, PrivateKey key) throws Exception {
+        // create new signature using SHA1/RSA
         Signature signer = Signature.getInstance("SHA1withRSA");
+        // initialize object to sign, using passed in private key
         signer.initSign(key);
+        // update data to be signed- add in data to signature
         signer.update(data);
+        // sign data and return from method
         return signer.sign();
     }
 
+    // this method to marshall new *unverified* block - which is sent to method as string
     public String marshalFromString(String input, BlockchainNode originNode) {
         // create new BlockchainBlock object
         // and marshall to XML
         pt = new ParseText(input);
         try {
             BlockchainBlock block = new BlockchainBlock();
+            // new instance of JAXB context, using BlockchainBlock class
+            // this specified which class we are going to be marshalling
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+            // create a new marshaller using JAXBContext initialized above
+            // again, this will use BlockchainBlock class
             Marshaller marshaller = jaxbContext.createMarshaller();
+            // new StringWriter to use with marshalling process
             StringWriter sw = new StringWriter();
+            // we want nice output on the marshalled data
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            // previousBlockHash is set in solve() meString
+            // previousBlockHash is set in solve() method
             // set randomString to null, to indicate unsolved
             block.setRandomString(null);
+            // add create time
             System.out.println(String.valueOf("currenttime: " + System.currentTimeMillis()));
             block.setCreateTime(String.valueOf(System.currentTimeMillis()));
+            // add pid of creating process
             block.setCreatingProcessId(String.valueOf(originNode.getPid()));
+            // cretae random string to use for block id
             block.setBlockId(new String(UUID.randomUUID().toString()));
+            // fill in data from file
             block.setFirstName(pt.firstName);
             block.setLastName(pt.lastName);
             block.setDob(pt.dob);
@@ -193,18 +256,41 @@ class CreateXml {
             block.setDiagnosis(pt.diagnosis);
             block.setTreatment(pt.treatment);
             block.setPrescription(pt.prescription);
+            // precaution to set signed hash to null for now
+            // this will be included in the data that gets signed
+            // so recieving process will need pull out signed hash, save it
+            // and set signed hash to null in received block
+            // in order to verify properly
             block.setSignedHash(null);
+            // lets marshall this block, shall we?
             marshaller.marshal(block, sw);
             // create messageDigest to get sha-256 digest of block (including signed hash == null)
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            // use previously marshalled block, make it a string, and then a byte array
             messageDigest.update(sw.toString().getBytes());
             // create digital signature
             byte[] signature = signData(messageDigest.digest(), originNode.getPrivateKey());
+            // encode this in base64, and add to the block
             block.setSignedHash(Base64.getEncoder().encodeToString(signature));
+            // helper println of signed hash
             System.out.println("signed hash: " + block.getSignedHash());
-            //System.out.println("marshalled: " + sw.toString());
-            return sw.toString();
+
+            // re-marshall this new block, that includes signature
+            JAXBContext jaxbContextFinal = JAXBContext.newInstance(BlockchainBlock.class);
+            // create a new marshaller using JAXBContext initialized above
+            // again, this will use BlockchainBlock class
+            Marshaller marshallerFinal = jaxbContext.createMarshaller();
+            // new StringWriter to use with marshalling process
+            StringWriter swFinal = new StringWriter();
+            // we want nice output on the marshalled data
+            marshallerFinal.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            marshallerFinal.marshal(block, swFinal);
+            // return block to calling method
+            // this block *includes* the signature
+            // again, unmarshalling process will need to set signature to null to verify
+            return swFinal.toString();
         } catch (Exception ex) {
+            // catch exceptions and print debugging stuff
             System.out.println("CreateXml exception");
             System.out.println(ex);
             ex.printStackTrace();
@@ -212,16 +298,24 @@ class CreateXml {
         }
     }
 
+    // this marshalls newly verified block
     public String marshalFromBlockchainBlock(BlockchainBlock newBlock) {
         try {
+            // new JAXBContext- to specify we are marshalling BlockchainBlock
             JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+            // create new marshaller using the context of blockchainblock
             Marshaller marshaller = jaxbContext.createMarshaller();
+            // string writer helper
             StringWriter sw = new StringWriter();
+            // we want nice output
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            // marshall the block- put into string writer
             marshaller.marshal(newBlock, sw);
-            System.out.println("marshalled new block: " + sw.toString());
+            System.out.println("marshalled newly verified block: " + sw.toString());
+            // return marshalled string to calling method
             return sw.toString();
         } catch (Exception ex) {
+            // exception handling
             System.out.println("CreateXml exception");
             System.out.println(ex);
             ex.printStackTrace();
@@ -230,21 +324,33 @@ class CreateXml {
 
     }
 
+    // method to marhsall public key
     public String marshalPublicKey(int pid, PublicKey pub) {
         // creat XML from public key
+        // first, we need to create a new instance of KeyHash
+        // which is a class to allow for the marshalling of keys
+        // KeyHash will be populated with pid and public key passed in as method args
         KeyHash keyHash = new KeyHash();
         keyHash.setPid(pid);
         keyHash.setPublicKey(pub.getEncoded());
         try {
+            // new instance of JAXBContext, this time specifying KeyHash
             JAXBContext jaxbContext = JAXBContext.newInstance(KeyHash.class);
+            // new marshaller using the KeyHash context
             Marshaller marshaller = jaxbContext.createMarshaller();
+            // string writer helper
             StringWriter sw = new StringWriter();
+            // again, we really like nice output
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            // marshal this, please
             marshaller.marshal(keyHash, sw);
+            // some pretty debug for command line
             System.out.println("-------------------------------");
             System.out.println("marshalled new block: " + sw.toString());
+            // return marshalled data as string to calling method
             return sw.toString();
         } catch (Exception ex) {
+            // exception handling
             System.out.println("CreateXml exception");
             System.out.println(ex);
             ex.printStackTrace();
@@ -253,6 +359,7 @@ class CreateXml {
     }
 
     class ParseText {
+        // variables to store data in
         private String firstName;
         private String lastName;
         private String dob;
@@ -262,6 +369,8 @@ class CreateXml {
         private String prescription;
 
         private ParseText(String input) {
+            // fancy, very manual string parsing.... I'm sure theres a better way to do this
+            // this will pull all the individual data points from the file
             int stringPointer = 0;
             firstName = input.substring(stringPointer, input.indexOf(" "));
             stringPointer = input.indexOf(" ", stringPointer + 1);
@@ -281,45 +390,59 @@ class CreateXml {
 }
 
 class BlockchainNodeMulticast {
-    // CLIENT
-    // singleton
     // multicast for all blockchain nodes
-    private static int numProcesses;
-    private String serverName = "localhost";
-    private int q_len = 6;
-    private int basePort;
-    private String newBlock;
-    private String xmlToSend;
-    private BlockchainNode originNode;
+    // set some class variables
+    private static int numProcesses; // store for # processes
+    private String serverName = "localhost"; // server name will be localhost
+    private int q_len = 6; // length of queue
+    private int basePort; // base port to use- dynamically determined based on data sending
+    private String newBlock; // place to store string of new block, when passed in
+    private String xmlToSend; // this is the xml we are going to multicast
+    private BlockchainNode originNode; // originiating node
 
+    // method to start multicast of newly *unverified* blockchain block
     BlockchainNodeMulticast(String input, BlockchainNode bcNode) {
         // received in XML for new Block
+        // get base port for unverified blocks
         basePort = Ports.getInstance().getUnverifiedBlockBasePort();
         newBlock = input;
-        new Thread(new MulticastWorker(input, bcNode)).start();
+        // set origin node variable to the originating node
         originNode = bcNode;
+        // spaw new multicast worker thread with correct args
+        // this thread will kick off the multicast party
+        new Thread(new MulticastWorker(input, bcNode)).start();
     }
 
+    // method to start multicast of newly verified blockchain block
     BlockchainNodeMulticast(BlockchainBlock newBlockchainBlock) {
         //newBlock = newBlockchainBlock;
+        // get base port for verified blocks to be sent on
         basePort = Ports.getInstance().getVerifiedBlockBasePort();
+        // start new multicast worker thread to get this multicast party started
         new Thread(new MulticastWorker(newBlockchainBlock)).start();
     }
 
+    // YABMOC - (yet another blockchain multicast overloaded constructor).. this time to send public keys
     BlockchainNodeMulticast(int pid, PublicKey pub) {
+        // get base port to send public keys on
         basePort = Ports.getInstance().getPublicKeyServerBasePort();
+        // new multicast worker party thread. to handle sending public key
         new Thread(new MulticastWorker(pid, pub)).start();
     }
 
+    // helper method to set number of processes
     public static void setNumProcesses(int num) {
         numProcesses = num;
     }
 
+    // worker class to multicast
     class MulticastWorker implements Runnable {
-        private String message;
-        private Socket sock;
-        private BlockchainBlock newBlockchainBlock;
+        // some variables
+        private String message; // message we are going to send
+        private Socket sock; // to hold socket
+        private BlockchainBlock newBlockchainBlock; // blockchain block we are going to send.. if needed
 
+        // overloaded constructor.. to send new blockchian
         private MulticastWorker(String input, BlockchainNode originNode) {
             // pass in XML as 'input', store in 'message'
             message = input;
@@ -329,33 +452,46 @@ class BlockchainNodeMulticast {
             xmlToSend = createXml.marshalFromString(input, originNode);
         }
 
+        // overloaded constructor
+        // this constructor takes completed blockchain block, and allows for multicast
         private MulticastWorker(BlockchainBlock newBlock) {
-            // overloaded constructor
-            // this constructor takes completed blockchain block, and allows for multicast
+            // store new blockchain in instance variable
             newBlockchainBlock = newBlock;
-            // need to unmarshal data here?
+            // new create xml instance to do the xml creation stuff
             CreateXml createXml = new CreateXml();
+            // store this xml to send in instance variable to be read by run method
             xmlToSend = createXml.marshalFromBlockchainBlock(newBlock);
         }
 
+        // another overloaded constructor- to send the public keys
         private MulticastWorker(int pid, PublicKey pub) {
+            // new create xml instance
             CreateXml createXml = new CreateXml();
+            // get me the xml to be sent for public keys. and store it instance var
             xmlToSend = createXml.marshalPublicKey(pid, pub);
+            // print key to send
             System.out.println("public key xml to send: " + xmlToSend);
         }
 
         public void run() {
             try {
+                // for each process - numProcesses was set earlier
                 for (int processId = 0; processId < numProcesses; processId++) {
                     // multicast to all blockchain servers
+                    // determine port- using the base port
                     int port = basePort + processId;
                     System.out.println("Sending to port: " + port);
+                    // get a new socket
                     sock = new Socket(serverName, port);
+                    // new printstream, to send xml
                     PrintStream out = new PrintStream(sock.getOutputStream());
+                    // send that xml, please
                     out.println(xmlToSend);
+                    // i tried to clean up the socket.. think this is all we need?
                     sock.close();
                 }
             } catch (IOException ex) {
+                // more exception stuff
                 System.out.println("multicast worker error");
                 System.out.println(ex);
                 ex.printStackTrace();
@@ -364,81 +500,105 @@ class BlockchainNodeMulticast {
     }
 }
 
+// this class verifies the blockchain when called
 class VerifyBlockchain {
     // TODO: verifies blockchain
 }
 
 // class to receive marshalled public key
+// reads in public key
 class PublicKeyStore implements Runnable {
-    // reads in public key
+    // concurrenthashmap to store mapping of all public keys to pid's
     private static ConcurrentHashMap<Integer, byte[]> pubKeyHashMap;
-    private int port;
-    private Socket sock;
-    int q_len = 6;
-    private BlockchainNode blockchainNode;
+    private int port; // port to use
+    private Socket sock; // socket connection
+    int q_len = 6; // length of the queue
+    private BlockchainNode blockchainNode; // blockchain node that owns this class
 
     public PublicKeyStore(int p, BlockchainNode bc) {
+        // set up the concurrenthashmap for public key storage
         pubKeyHashMap = new ConcurrentHashMap<>();
+        // figure out which port we will look for connection on
         port = Ports.getInstance().getPublicKeyServerPort(p);
         System.out.println("public key server port: " + port);
+        // set the blockchian node to the calling process (which passes itself into constructor)
         blockchainNode = bc;
     }
 
+    // return public key for specified pid
     public byte[] getPublicKey(int pid) {
         return pubKeyHashMap.get(pid);
     }
 
     public void run() {
         try {
+            // make a new server socket, using correct port #
             ServerSocket servSock = new ServerSocket(port, q_len);
             while (true) {
+                // wait for a connection from client, accept connection when asked
                 sock = servSock.accept();
+                // spawn new public key store worker when connection started
                 new Thread(new PublicKeyStoreWorker(sock)).start();
             }
         } catch (Exception ex) {
+            // exception stuff
             System.out.println("PublicKeyStore error: " + ex);
             ex.printStackTrace();
         }
     }
 
+    // worker class that actually unmarshalls and adds received keys to instance hash map
     class PublicKeyStoreWorker implements Runnable {
+        // socket we're using
         private Socket socket;
 
+        // constructor.. set the socket
         public PublicKeyStoreWorker(Socket s) {
             socket = s;
         }
 
         public void run() {
-            //KeyHash pubKeyHash = new KeyHash();
             try {
+                // make a new buffered reader to read data sent by client to this process
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                // to hold input from client
                 String input = "";
+                // string builder. to store each line read from client
                 StringBuilder sb = new StringBuilder();
                 do {
+                    // read next line of input
                     input = in.readLine();
+                    // if its not null, add it to string builder
                     if (input != null) {
                         sb.append(input);
                     }
-                } while (input != null);
+                } while (input != null); // stop it when you get a null input
 
                 // create reader object to unmarshal
-                //System.out.println("received (before unmarshal) in publickeystore: " + sb.toString());
                 StringReader reader = new StringReader(sb.toString());
+                // new context for unmarshalling- using KeyHash class
                 JAXBContext jaxbContext = JAXBContext.newInstance(KeyHash.class);
+                // new unmarshaller using KeyHash context created above
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+                // create new KeyHash class by unmarshalling data received from client
                 KeyHash pubKeyHash = (KeyHash) unmarshaller.unmarshal(reader);
-                System.out.println("Received public key: " + pubKeyHash.toString());
+                // notify user new public key received
+                System.out.println("Received public key: " + pubKeyHash.getPid());
+                // add this new pid/publickey pair to hash map
                 pubKeyHashMap.put(pubKeyHash.getPid(), pubKeyHash.getPublicKey());
+                // clean up and close reader
                 reader.close();
-                // TODO: send public key for this process, if this.pid not in hashmap
+                // if we received process 2's key, and we are not process 2
+                // send our public key to other nodes
+                // this ensures all nodes get eachothers keys
                 if (pubKeyHash.getPid() == 2 && blockchainNode.getPid() != 2)  {
-                    System.out.println("this process pid not in keylist. pid: " + pubKeyHash.getPid());
                     int p = blockchainNode.getPid();
                     PublicKey pub = blockchainNode.getPublicKey();
+                    // multicast this nodes' public keys
                     new BlockchainNodeMulticast(p, pub);
-            //new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
                 }
             } catch (Exception ex) {
+                // exception stuff
                 System.out.println("PublicKeyStoreWorker error: " + ex);
                 ex.printStackTrace();
             }
@@ -446,64 +606,78 @@ class PublicKeyStore implements Runnable {
     }
 }
 
+// class to manage verified blocks
 class VerifiedBlockServer implements Runnable {
-    private int pid;
-    private int port;
-    private int q_len = 6;
-    private Socket sock;
-    private BlockchainNode blockchainNode;
+    private int pid; // process id
+    private int port; // port to use
+    private int q_len = 6; // queue length
+    private Socket sock; // to store socket connection
+    private BlockchainNode blockchainNode; // calling blockchain node - passed in constructor
 
+    // constructor
     public VerifiedBlockServer(BlockchainNode bcNode) {
-        // empty constructor for now
-        pid = bcNode.getPid();
-        port = Ports.getInstance().getVerifiedBlockPort(pid);
-        blockchainNode = bcNode;
-        System.out.println("VerifiedBlockServer port: " + port);
+        pid = bcNode.getPid(); // add pid
+        port = Ports.getInstance().getVerifiedBlockPort(pid); // get port number to listen on
+        blockchainNode = bcNode; // creating node
     }
 
     public void run() {
         // run method
         try {
+            // new server socket created
             ServerSocket servSock = new ServerSocket(port, q_len);
             while (true) {
                 // infinite loop- keep waiting for multicast client to connect
                 sock = servSock.accept(); // blocks
-                // once connected, spawn unverifiedblockworker thread to handle
+                // once connected, spawn verifiedblockworker thread to handle
                 new Thread(new VerifiedBlockWorker(sock)).start();
             }
         } catch (IOException ex) {
+            // exception stuff
             System.out.println(ex);
+            ex.printStackTrace();
         }
     }
 
+    // worker class to handle received verified block
     class VerifiedBlockWorker implements Runnable {
+        // socket we are connected on
         private Socket sock;
 
+        // constructor
         private VerifiedBlockWorker(Socket s) {
+            // set socket connection instance variable
             sock = s;
         }
 
         public void run() {
             // run method implementation
             try {
+                // new buffered reader, to read in data from client
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                // keeper of next line input
                 String input = "";
+                // string builder, to build our input, from multiple lines
                 StringBuilder sb = new StringBuilder();
                 do {
+                    // read next line
                     input = in.readLine();
+                    // if its not null, append to the string builder
                     if (input != null) {
                         sb.append(input);
                     }
-                } while (input != null);
-                // create reader object to unmarshal
+                } while (input != null); // stop once we read in a null string
                 System.out.println("unverified block received: " + sb.toString());
+                // create reader object to unmarshal
                 StringReader reader = new StringReader(sb.toString());
+                // new jaxbcontext, BlockchianBlock since that is what we are unmarshalling to
                 JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
+                // new unmarshaller, using blockchainblock context above
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+                // create new blockchian block from unmarshalled received data
                 BlockchainBlock newBlock = (BlockchainBlock) unmarshaller.unmarshal(reader);
 
-                //PrintStream out = new PrintStream(new FileOutputStream("./xmlExample.xml"));
-                //out.print(sb.toString());
+                // clean up
                 reader.close();
 
                 // add to unverifiedBlockQueue
@@ -513,9 +687,12 @@ class VerifiedBlockServer implements Runnable {
                 // so remove from unverified queue
                 UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
                 // and add to new BlockchainBlcok
-                // TODO: check to make sure block is not already added??
                 blockchainNode.addBlockchainBlock(newBlock);
-                // TODO: verify new block?
+
+                // if we are process 0, write new blockchain to disk
+                if (blockchainNode.getPid() == 0) {
+                    blockchainNode.exportBlockchainToFile();
+                }
                 System.out.print("verified block queue: ");
             } catch (Exception ex) {
                 System.out.println("Verified bock worker exception: " + ex);
