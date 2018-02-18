@@ -59,8 +59,13 @@ class Blockchain {
         int q_len = 6; // queue length
         int pid = ((args.length < 1) ? 0 : Integer.parseInt(args[0]));
         bc = new BlockchainNode(pid); // create new blockchain node instance
+        // if this is process # 2, multicast public keys to other nodes
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
+        // if this is process 2, start sending keys to every process
+        if (pid == 2) {
+            bc.startPublicKeySimulcast();
+        }
 
         // start reading input from user
         try {
@@ -119,16 +124,16 @@ class Blockchain {
 }
 
 class BlockchainNode {
-    private int numProcesses = 3; // number of processes
-    private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
-    private VerifiedBlockServer verifiedBlockServer; // verified block server, to manage verified blocks
-    private PublicKeyStore publicKeyStore; // to store public keys
+    private static int numProcesses = 3; // number of processes
+    private static UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
+    private static VerifiedBlockServer verifiedBlockServer; // verified block server, to manage verified blocks
+    private static PublicKeyStore publicKeyStore; // to store public keys
     private static Stack<BlockchainBlock> blockchainStack; // stack to store full blockchain
-    private KeyPair keyPair; // this blockchain node's public and private keys
-    private int pid; // process id of this node
-    private int verifiedBlockPort; // port number for this node's verified block server
-    private int unverifiedBlockPort; // unverified block server port number for this node
-    private int publicKeyServerPort; // port number for this nodes public key server
+    private static KeyPair keyPair; // this blockchain node's public and private keys
+    private static int pid; // process id of this node
+    private static int verifiedBlockPort; // port number for this node's verified block server
+    private static int unverifiedBlockPort; // unverified block server port number for this node
+    private static int publicKeyServerPort; // port number for this nodes public key server
 
     BlockchainNode(int pid) {
         // set pid of BlockchainNode
@@ -146,14 +151,10 @@ class BlockchainNode {
         this.getInstanceKeys();
         // start various servers and consumers for blockchain workflow
         this.startServerandConsumer();
-        // if this is process # 2, multicast public keys to other nodes
-        if (this.pid == 2) {
-            this.startPublicKeySimulcast();
-        }
     }
 
     // only run by pid 2
-    private void startPublicKeySimulcast() {
+    public void startPublicKeySimulcast() {
         try {
             // sleep for 3 sec.. allow all nodes to start
             Thread.sleep(3000);
