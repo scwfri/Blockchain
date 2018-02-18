@@ -1,7 +1,12 @@
 /*----------------------------------------------------------
 * File: Blockchain.java
 * Compilation: javac Blockchain.java
-* Usage (in different shell window):
+* Usage:
+* on Unix: ./all.sh
+*   will create 3 processes, and prompt for user input
+*   on command line: 
+*       R <filename> to read file in and begin work to create blockchain
+*       quit to exit
 * Files needed to run:
 *   - Blockchain.java
 *
@@ -9,15 +14,19 @@
 * web sources:
 *  Reading lines and tokens from a file:
 *  http://www.fredosaurus.com/notes-java/data/strings/96string_examples/example_stringToArray.html
-*
-*  XML validator:
-*  https://www.w3schools.com/xml/xml_validator.asp
-*
-*  XML / Object conversion:
-*  https://www.mkyong.com/java/jaxb-hello-world-example/
-----------------------------------------------------------*/
 
-// TODO: have pid 0 export to file
+XML validator:
+https://www.w3schools.com/xml/xml_validator.asp
+
+XML / Object conversion:
+https://www.mkyong.com/java/jaxb-hello-world-example
+http://www.java2s.com/Code/Java/Security/SignatureSignAndVerify.htm
+https://www.mkyong.com/java/java-digital-signatures-example/ (not so clear)
+https://javadigest.wordpress.com/2012/08/26/rsa-encryption-example/
+https://www.programcreek.com/java-api-examples/index.php?api=java.security.SecureRandom
+https://www.mkyong.com/java/java-sha-hashing-example/
+https://stackoverflow.com/questions/19818550/java-retrieve-the-actual-value-of-the-public-key-from-the-keypair-object
+/----------------------------------------------------------*/
 
 import java.util.*;
 import java.io.*;
@@ -88,12 +97,6 @@ class BlockchainNode {
             // send pid #2 public key to other nodes
             // this will kick off other nodes sending their keys to all nodes
             new BlockchainNodeMulticast(getPid(), getPublicKey());
-
-            // NOTES BELOW
-            // base64 encoded private key
-            //priv = keyPair.getPrivate().getEncoded();
-            //base64 encoded public key
-            //pub = keyPair.getPublic().getEncoded();
         }
     }
 
@@ -828,6 +831,19 @@ class UnverifiedBlockConsumer implements Runnable {
         }
     }
 
+    // method to verify signature
+    public static boolean verifySig(byte[] data, PublicKey key, byte[] sig) throws Exception {
+        // create new Signature- use SHA1/RSA
+        Signature signer = Signature.getInstance("SHA1withRSA");
+        // initialize object to verify- using key
+        signer.initVerify(key);
+        // update data to be verified- (i.e. add in data to key)
+        signer.update(data);
+
+        // return result
+        return (signer.verify(sig));
+    }
+
     // worker class to handle new unverified block
     class UnverifiedBlockWorker implements Runnable {
         Socket sock; // socket connection
@@ -867,6 +883,10 @@ class UnverifiedBlockConsumer implements Runnable {
                 reader.close();
                 
                 // TODO: verify signature on block
+                // store block signature
+                // remove signature from block (set to null)
+                // new messagedigest
+
 
                 // add to unverifiedBlockQueue
                 if (newBlock.getRandomString() == null) {
