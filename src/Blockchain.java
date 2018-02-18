@@ -222,6 +222,7 @@ class CreateXml {
             StringWriter sw = new StringWriter();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             marshaller.marshal(keyHash, sw);
+            System.out.println("-------------------------------");
             System.out.println("marshalled new block: " + sw.toString());
             return sw.toString();
         } catch (Exception ex) {
@@ -387,7 +388,7 @@ class PublicKeyStore implements Runnable {
         }
 
         public void run() {
-            KeyHash pubKeyHash = new KeyHash();
+            //KeyHash pubKeyHash = new KeyHash();
             try {
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = "";
@@ -403,15 +404,15 @@ class PublicKeyStore implements Runnable {
                 StringReader reader = new StringReader(sb.toString());
                 JAXBContext jaxbContext = JAXBContext.newInstance(KeyHash.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-                pubKeyHash = (KeyHash) unmarshaller.unmarshal(reader);
+                KeyHash pubKeyHash = (KeyHash) unmarshaller.unmarshal(reader);
                 System.out.println("Received public key: " + pubKeyHash.toString());
                 pubKeyHashMap.put(pubKeyHash.getPid(), pubKeyHash.getPublicKey());
                 reader.close();
                 // TODO: send public key for this process, if this.pid not in hashmap
-                if (pubKeyHash.getPid() == 2) {
-                    System.out.println("this process pid not in keylist");
-                    new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
-                }
+                //if (pubKeyHash.getPid() == 2) {
+                    //System.out.println("this process pid not in keylist");
+                    //new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
+                //}
             } catch (Exception ex) {
                 System.out.println("PublicKeyStoreWorker error: " + ex);
                 ex.printStackTrace();
@@ -782,6 +783,10 @@ class KeyHash {
         return publicKey;
     }
 
+    public int getPiid() {
+        return pid;
+    }
+
     @XmlElement
     public void setPid(int pid) {
         this.pid = pid;
@@ -794,7 +799,7 @@ class KeyHash {
 
     @Override
     public String toString() {
-        return "pid: " + pid + "\npublic key: " + publicKey;
+        return "pid: " + pid + "\npublic key: " + Base64.getEncoder().encodeToString(publicKey);
     }
 }
 
