@@ -62,7 +62,6 @@ class BlockchainNode {
     private int verifiedBlockPort;
     private int unverifiedBlockPort;
     private int publicKeyServerPort;
-    private ConcurrentHashMap<Integer, PublicKey> publicKeyList;
 
     BlockchainNode(int pid) {
         // set pid of BlockchainNode
@@ -85,7 +84,7 @@ class BlockchainNode {
             } catch (Exception ex) {
                 System.out.println("interrupt exception: " + ex);
             }
-            new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
+            new BlockchainNodeMulticast(getPid(), getPublicKey());
 
             // base64 encoded private key
             //priv = keyPair.getPrivate().getEncoded();
@@ -108,6 +107,7 @@ class BlockchainNode {
         new Thread(publicKeyStore).start();
         new Thread(unverifiedBlockServer).start();
         new Thread(unverifiedBlockConsumer).start();
+        new Thread(verifiedBlockServer).start();
     }
 
     public void addBlockchainBlock(BlockchainBlock bcBlock) {
@@ -139,6 +139,10 @@ class BlockchainNode {
         return keyPair.getPublic();
     }
 
+    public PrivateKey getPrivateKey() {
+        return keyPair.getPrivate();
+    }
+
     public int getPid() {
         return pid;
     }
@@ -154,6 +158,13 @@ class CreateXml {
     private static ParseText pt;
 
     public CreateXml() {
+    }
+
+    private static byte[] signData(byte[] data, PrivateKey key) throws Exception {
+        Signature signer = Signature.getInstance("SHA1withRSA");
+        signer.initSign(key);
+        signer.update(data);
+        return signer.sign();
     }
 
     public String marshalFromString(String input, BlockchainNode originNode) {
@@ -182,8 +193,16 @@ class CreateXml {
             block.setDiagnosis(pt.diagnosis);
             block.setTreatment(pt.treatment);
             block.setPrescription(pt.prescription);
+            block.setSignedHash(null);
             marshaller.marshal(block, sw);
-            System.out.println("marshalled: " + sw.toString());
+            // create messageDigest to get sha-256 digest of block (including signed hash == null)
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            messageDigest.update(sw.toString().getBytes());
+            // create digital signature
+            byte[] signature = signData(messageDigest.digest(), originNode.getPrivateKey());
+            block.setSignedHash(Base64.getEncoder().encodeToString(signature));
+            System.out.println("signed hash: " + block.getSignedHash());
+            //System.out.println("marshalled: " + sw.toString());
             return sw.toString();
         } catch (Exception ex) {
             System.out.println("CreateXml exception");
@@ -283,7 +302,7 @@ class BlockchainNodeMulticast {
 
     BlockchainNodeMulticast(BlockchainBlock newBlockchainBlock) {
         //newBlock = newBlockchainBlock;
-        basePort = Ports.getInstance().getUnverifiedBlockBasePort();
+        basePort = Ports.getInstance().getVerifiedBlockBasePort();
         new Thread(new MulticastWorker(newBlockchainBlock)).start();
     }
 
@@ -329,10 +348,8 @@ class BlockchainNodeMulticast {
             try {
                 for (int processId = 0; processId < numProcesses; processId++) {
                     // multicast to all blockchain servers
-                    // TODO: this is sending verified blocks on unverified port
                     int port = basePort + processId;
-                    System.out.println("Sending to public key port: " + port);
-                    System.out.println("serverName: " + serverName);
+                    System.out.println("Sending to port: " + port);
                     sock = new Socket(serverName, port);
                     PrintStream out = new PrintStream(sock.getOutputStream());
                     out.println(xmlToSend);
@@ -365,6 +382,10 @@ class PublicKeyStore implements Runnable {
         port = Ports.getInstance().getPublicKeyServerPort(p);
         System.out.println("public key server port: " + port);
         blockchainNode = bc;
+    }
+
+    public byte[] getPublicKey(int pid) {
+        return pubKeyHashMap.get(pid);
     }
 
     public void run() {
@@ -401,6 +422,7 @@ class PublicKeyStore implements Runnable {
                 } while (input != null);
 
                 // create reader object to unmarshal
+                //System.out.println("received (before unmarshal) in publickeystore: " + sb.toString());
                 StringReader reader = new StringReader(sb.toString());
                 JAXBContext jaxbContext = JAXBContext.newInstance(KeyHash.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
@@ -409,11 +431,13 @@ class PublicKeyStore implements Runnable {
                 pubKeyHashMap.put(pubKeyHash.getPid(), pubKeyHash.getPublicKey());
                 reader.close();
                 // TODO: send public key for this process, if this.pid not in hashmap
-                //if (pubKeyHash.getPid() != blockchainNode.getPid()) {
-                    //System.out.println("this process pid not in keylist. pid: " + pubKeyHash.getPid());
-                    //new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
-            ////new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
-                //}
+                if (pubKeyHash.getPid() == 2 && blockchainNode.getPid() != 2)  {
+                    System.out.println("this process pid not in keylist. pid: " + pubKeyHash.getPid());
+                    int p = blockchainNode.getPid();
+                    PublicKey pub = blockchainNode.getPublicKey();
+                    new BlockchainNodeMulticast(p, pub);
+            //new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
+                }
             } catch (Exception ex) {
                 System.out.println("PublicKeyStoreWorker error: " + ex);
                 ex.printStackTrace();
@@ -434,6 +458,7 @@ class VerifiedBlockServer implements Runnable {
         pid = bcNode.getPid();
         port = Ports.getInstance().getVerifiedBlockPort(pid);
         blockchainNode = bcNode;
+        System.out.println("VerifiedBlockServer port: " + port);
     }
 
     public void run() {
@@ -471,6 +496,7 @@ class VerifiedBlockServer implements Runnable {
                     }
                 } while (input != null);
                 // create reader object to unmarshal
+                System.out.println("unverified block received: " + sb.toString());
                 StringReader reader = new StringReader(sb.toString());
                 JAXBContext jaxbContext = JAXBContext.newInstance(BlockchainBlock.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
@@ -530,7 +556,9 @@ class UnverifiedBlockServer implements Runnable {
                     String line = "";
                     do {
                         line = fr.readLine();
-                        new BlockchainNodeMulticast(line.toString(), originNode);
+                        if (line != null) {
+                            new BlockchainNodeMulticast(line.toString(), originNode);
+                        }
                     } while (line != null);
                 }
             } while (input.indexOf("quit") == -1);
@@ -641,37 +669,26 @@ class UnverifiedBlockConsumer implements Runnable {
                     System.out.print("unverified block queue: ");
                     printQueue();
                     return;
-                } else {
-                    System.out.println("received new solved block");
-                    System.out.println("newly verified blockchain block: " + newBlock.toString());
-                    // block has been completed
-                    // so remove from unverified queue
-                    removeFromUnverifiedQueue(newBlock.getBlockId());
-                    // and add to new BlockchainBlcok
-                    blockchainNode.addBlockchainBlock(newBlock);
-                    System.out.println("unverified queue after remove: " + unverifiedQueue);
-                    System.out.print("verified block queue: ");
-                    printQueue();
-                    return;
                 }
             } catch (IOException ex) {
                 System.out.println(ex);
             } catch (JAXBException e) {
                 System.out.println("JAXB unverified block worker exception");
                 System.out.println(e);
+                e.printStackTrace();
             }
         }
 
         // solve is a synchronized method, so only one thread can execute at a time
         private synchronized void solve(BlockchainBlock newBlock) {
             String randomString;
-            Boolean bool = true;
+            Boolean unsolved = true;
             BlockchainBlock workerBlock = newBlock;
 
             // add previous block ID to workerBlock
             workerBlock.setPreviousBlockHash(blockchainNode.peekLastHash());
 
-            while (bool) {
+            while (unsolved) {
                 // generate random string to attempt to solve
                 randomString = new String(UUID.randomUUID().toString());
                 workerBlock.setRandomString(randomString);
@@ -679,7 +696,6 @@ class UnverifiedBlockConsumer implements Runnable {
                     // check to make sure current block is not verified yet
                     if (!isUnverified(workerBlock.getBlockId())) {
                         System.out.println("---------CURRENT WORK BLOCK VERIFIED------");
-                        bool = false;
                         return;
                     }
                     MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -689,20 +705,19 @@ class UnverifiedBlockConsumer implements Runnable {
                     if (hex.substring(0,1).equals("F")) {
                         System.out.println("time: " + System.currentTimeMillis() + "\nWINNER!");
                         workerBlock.setSolvedProcessId(String.valueOf(blockchainNode.getPid()));
-                        bool = false;
+                        unsolved = false;
                     }
                     // sleep for 5 sec -- for syncrhonization
                     Thread.sleep(5000);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
-
-                // do not need to store THIS hash
-                // only need to store previous hash
             }
 
             // create new multicast to send to all BlockchainNodes
-            new BlockchainNodeMulticast(workerBlock);
+            if (!unsolved) {
+                new BlockchainNodeMulticast(workerBlock);
+            }
         }
 
         public void printQueue(){
@@ -851,6 +866,7 @@ class Ports {
 
 @XmlRootElement
 class BlockchainBlock implements Comparable<BlockchainBlock> {
+    private String signedHash;
     private String createTime;
     private String previousBlockHash;
     private String randomString;
@@ -871,6 +887,15 @@ class BlockchainBlock implements Comparable<BlockchainBlock> {
         } else {
             return 1;
         }
+    }
+
+    public String getSignedHash() {
+        return signedHash;
+    }
+
+    @XmlElement
+    public void setSignedHash(String signedHash) {
+        this.signedHash = String.valueOf(signedHash);
     }
 
     public String getCreateTime() {
