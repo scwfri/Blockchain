@@ -4,16 +4,22 @@
 * Usage:
 * on Unix: ./all.sh
 *   will create 3 processes, and prompt for user input
-*   on command line: 
+*   on command line:
 *       R <filename> to read file in and begin work to create blockchain
 *       quit to exit
 * Files needed to run:
 *   - Blockchain.java
-*
-*
-* web sources:
-*  Reading lines and tokens from a file:
-*  http://www.fredosaurus.com/notes-java/data/strings/96string_examples/example_stringToArray.html
+Note:
+    I am pretty sure i fixed the issue, but I was getting an exception when sending public
+    keys out every once in a while. I think it was an issue with the order everything
+    was starting in, so I tried to clean that up and have not seen an exception
+    in a while. If it does however rear its ugly head and decide not to
+    cooperate and throw an exception for you, please just kill it and restart
+    a couple times until the exception does not occur. Thanks.
+
+web sources:
+ Reading lines and tokens from a file:
+ http://www.fredosaurus.com/notes-java/data/strings/96string_examples/example_stringToArray.html
 
 XML validator:
 https://www.w3schools.com/xml/xml_validator.asp
@@ -48,18 +54,73 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 class Blockchain {
+    private static BlockchainNode bc;
     public static void main(String[] args) {
         int q_len = 6; // queue length
         int pid = ((args.length < 1) ? 0 : Integer.parseInt(args[0]));
-        BlockchainNode bc = new BlockchainNode(pid); // create new blockchain node instance
+        bc = new BlockchainNode(pid); // create new blockchain node instance
         System.out.println("Scott Friedrich's blockchain framework.");
         System.out.println("Using processID: " + pid + "\n");
+
+        // start reading input from user
+        try {
+            // string to hold user input
+            String input = "";
+            // string to hold file name
+            String file = "";
+            // wait 5sec, while system starts- its a hack, I know...
+            Thread.sleep(5000);
+            // new buffered reader to read user input
+            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+            // print instructions to user
+            System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify q to quit> ");
+            int counter = 0;
+            // wait for user input
+            while (true) {
+                    // read next input from user
+                    input = userInput.readLine();
+                    // if user inputs an R
+                    if (input.indexOf("R") == 0) {
+                        // new buffered reader to read input from specified file
+                        try {
+                            BufferedReader fr = new BufferedReader(new FileReader("./" + input.substring(2)));
+                            String line = "";
+                            do {
+                                // read next line from file
+                                line = fr.readLine();
+                                if (line != null) {
+                                    // if line is not null, multicast as new unverified block to nodes
+                                    counter++;
+                                    new BlockchainNodeMulticast(line.toString(), bc);
+                                }
+                            } while (line != null); // once you reach null line, youre done reading file
+                            System.out.println(counter + " records have been added to unverified blocks.");
+                        } catch (IOException ex) {
+                            System.out.println("File not found.");
+                        }
+                    } else if (input.indexOf("L") == 0) {
+                        bc.printBlockchain();
+                    } else if (input.indexOf("V") == 0) {
+                        System.out.println("verify blocks here");
+                    } else if (input.indexOf("C") == 0) {
+                        System.out.println("credit here");
+                    } else if (input.indexOf("quit") != -1) {
+                        System.exit(0);
+                    } else {
+                        System.out.println("Command not recognized. Please try again.");
+                    }
+            }
+            // exception stuff
+        } catch (Exception e) {
+            System.out.println("interruped exception " + e);
+            e.printStackTrace();
+        }
     }
 }
 
 class BlockchainNode {
     private int numProcesses = 3; // number of processes
-    private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
+    //private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private VerifiedBlockServer verifiedBlockServer; // verified block server, to manage verified blocks
     private PublicKeyStore publicKeyStore; // to store public keys
@@ -88,15 +149,26 @@ class BlockchainNode {
         this.startServerandConsumer();
         // if this is process # 2, multicast public keys to other nodes
         if (this.pid == 2) {
-            try {
-                // sleep for 1 sec.. allow all nodes to start
-                Thread.sleep(1000);
-            } catch (Exception ex) {
-                System.out.println("interrupt exception: " + ex);
-            }
-            // send pid #2 public key to other nodes
-            // this will kick off other nodes sending their keys to all nodes
-            new BlockchainNodeMulticast(getPid(), getPublicKey());
+            this.startPublicKeySimulcast();
+        }
+    }
+
+    // only run by pid 2
+    private void startPublicKeySimulcast() {
+        try {
+            // sleep for 3 sec.. allow all nodes to start
+            Thread.sleep(3000);
+        } catch (Exception ex) {
+            System.out.println("interrupt exception: " + ex);
+        }
+        // send pid #2 public key to other nodes
+        // this will kick off other nodes sending their keys to all nodes
+        new BlockchainNodeMulticast(getPid(), getPublicKey());
+    }
+
+    public void printBlockchain() {
+        for (BlockchainBlock b : blockchainStack) {
+            System.out.println(b.toString());
         }
     }
 
@@ -108,23 +180,26 @@ class BlockchainNode {
     public void startServerandConsumer() {
         // store instance of public key store, unverified block server, and unverified block consumer
         publicKeyStore = new PublicKeyStore(this.getPid(), this);
+        // initialize thread
+        new Thread(publicKeyStore).start();
         // create new unverified block server
-        unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
+        //unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
+        //// initialize thread
+        //new Thread(unverifiedBlockServer).start();
         // create new unverified block consumer
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
+        // initialize thread
+        new Thread(unverifiedBlockConsumer).start();
         // create new verified block server
         verifiedBlockServer = new VerifiedBlockServer(this);
-        // intialize threads for all servers and consumers
-        new Thread(publicKeyStore).start();
-        new Thread(unverifiedBlockServer).start();
-        new Thread(unverifiedBlockConsumer).start();
+        // initialize thread
         new Thread(verifiedBlockServer).start();
     }
 
     public void addBlockchainBlock(BlockchainBlock bcBlock) {
         // method to add new block to this nodes copy of the blockchain block
         blockchainStack.add(bcBlock);
-        System.out.println("BlockchainStack:" + blockchainStack.toString());
+        //System.out.println("BlockchainStack:" + blockchainStack.toString());
     }
 
     public void exportBlockchainToFile() {
@@ -245,7 +320,6 @@ class CreateXml {
             // set randomString to null, to indicate unsolved
             block.setRandomString(null);
             // add create time
-            System.out.println(String.valueOf("currenttime: " + System.currentTimeMillis()));
             block.setCreateTime(String.valueOf(System.currentTimeMillis()));
             // add pid of creating process
             block.setCreatingProcessId(String.valueOf(originNode.getPid()));
@@ -314,7 +388,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
             // marshall the block- put into string writer
             marshaller.marshal(newBlock, sw);
-            System.out.println("marshalled newly verified block: " + sw.toString());
+            //System.out.println("marshalled newly verified block: " + sw.toString());
             // return marshalled string to calling method
             return sw.toString();
         } catch (Exception ex) {
@@ -348,8 +422,8 @@ class CreateXml {
             // marshal this, please
             marshaller.marshal(keyHash, sw);
             // some pretty debug for command line
-            System.out.println("-------------------------------");
-            System.out.println("marshalled new block: " + sw.toString());
+            //System.out.println("-------------------------------");
+            //System.out.println("marshalled new block: " + sw.toString());
             // return marshalled data as string to calling method
             return sw.toString();
         } catch (Exception ex) {
@@ -473,7 +547,7 @@ class BlockchainNodeMulticast {
             // get me the xml to be sent for public keys. and store it instance var
             xmlToSend = createXml.marshalPublicKey(pid, pub);
             // print key to send
-            System.out.println("public key xml to send: " + xmlToSend);
+            //System.out.println("public key xml to send: " + xmlToSend);
         }
 
         public void run() {
@@ -483,7 +557,6 @@ class BlockchainNodeMulticast {
                     // multicast to all blockchain servers
                     // determine port- using the base port
                     int port = basePort + processId;
-                    System.out.println("Sending to port: " + port);
                     // get a new socket
                     sock = new Socket(serverName, port);
                     // new printstream, to send xml
@@ -523,7 +596,6 @@ class PublicKeyStore implements Runnable {
         pubKeyHashMap = new ConcurrentHashMap<>();
         // figure out which port we will look for connection on
         port = Ports.getInstance().getPublicKeyServerPort(p);
-        System.out.println("public key server port: " + port);
         // set the blockchian node to the calling process (which passes itself into constructor)
         blockchainNode = bc;
     }
@@ -670,7 +742,7 @@ class VerifiedBlockServer implements Runnable {
                         sb.append(input);
                     }
                 } while (input != null); // stop once we read in a null string
-                System.out.println("unverified block received: " + sb.toString());
+                //System.out.println("unverified block received: " + sb.toString());
                 // create reader object to unmarshal
                 StringReader reader = new StringReader(sb.toString());
                 // new jaxbcontext, BlockchianBlock since that is what we are unmarshalling to
@@ -684,8 +756,8 @@ class VerifiedBlockServer implements Runnable {
                 reader.close();
 
                 // add to unverifiedBlockQueue
-                System.out.println("received new solved block");
-                System.out.println("newly verified blockchain block: " + newBlock.toString());
+                System.out.println("received new solved block, blockId: " + newBlock.getBlockId());
+                //System.out.println("newly verified blockchain block: " + newBlock.toString());
                 // block has been completed
                 // so remove from unverified queue
                 UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
@@ -696,7 +768,6 @@ class VerifiedBlockServer implements Runnable {
                 if (blockchainNode.getPid() == 0) {
                     blockchainNode.exportBlockchainToFile();
                 }
-                System.out.print("verified block queue: ");
             } catch (Exception ex) {
                 // exception stuff
                 System.out.println("Verified bock worker exception: " + ex);
@@ -706,61 +777,70 @@ class VerifiedBlockServer implements Runnable {
     }
 }
 
-class UnverifiedBlockServer implements Runnable {
-    // read data in from text file
-    // tell BlockchainNodeList class to multicast to everyone
-    // UnverifiedBlockWorker does "work" on new block
-    // once verified, UnverifiedBlockWorker tells BlockChainNodeList to multicast
-    private int pid; // pid of calling process
-    private BlockchainNode originNode; // calling process
+//class UnverifiedBlockServer implements Runnable {
+    //// read input from user
+    //// read data in from text file
+    //// tell BlockchainNodeList class to multicast to everyone
+    //// UnverifiedBlockWorker does "work" on new block
+    //// once verified, UnverifiedBlockWorker tells BlockChainNodeList to multicast
+    //private int pid; // pid of calling process
+    //private BlockchainNode originNode; // calling process
 
-    public UnverifiedBlockServer(int p, BlockchainNode blockchainNode) {
-        pid = p; // set pid
-        originNode = blockchainNode; // add calling blockchainNode to instance variable
-    }
+    //public UnverifiedBlockServer(int p, BlockchainNode blockchainNode) {
+        //pid = p; // set pid
+        //originNode = blockchainNode; // add calling blockchainNode to instance variable
+    //}
 
-    public void run() {
-        //run method
-        // read data in from text file
-        try {
-            // string to hold user input
-            String input = "";
-            // string to hold file name
-            String file = "";
-            // wait 5sec, while system starts- its a hack, I know...
-            Thread.sleep(5000);
-            // new buffered reader to read user input
-            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-            // print instructions to user
-            System.out.print("Enter R <filename> to read file, q to quit> ");
-            do {
-                // read next input from user
-                input = userInput.readLine();
-                // if user inputs an R
-                if (input.indexOf("R") != -1) {
-                    // new buffered reader to read input from specified file
-                    BufferedReader fr = new BufferedReader(new FileReader("./" + input.substring(2)));
-                    String line = "";
-                    do {
-                        // read next line from file
-                        line = fr.readLine();
-                        if (line != null) {
-                            // if line is not null, multicast as new unverified block to nodes
-                            new BlockchainNodeMulticast(line.toString(), originNode);
-                        }
-                    } while (line != null); // once you reach null line, youre done reading file
-                }
-            } while (input.indexOf("quit") == -1);
-            // exception stuff
-        } catch (IOException ex) {
-            System.out.println("File not found.");
-        } catch (Exception e) {
-            System.out.println("interruped exception " + e);
-            e.printStackTrace();
-        }
-    }
+    //public void run() {
+        ////run method
+        //// read data in from text file
+        //try {
+            //// string to hold user input
+            //String input = "";
+            //// string to hold file name
+            //String file = "";
+            //// wait 5sec, while system starts- its a hack, I know...
+            //Thread.sleep(5000);
+            //// new buffered reader to read user input
+            //BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+            //// print instructions to user
+            //System.out.print("Enter R <filename> to read file, q to quit> ");
+            //int counter = 0;
+            //// wait for user input, I guess this really should be in main()
+            //while (true) {
+                //do {
+                    //// read next input from user
+                    //input = userInput.readLine();
+                    //// if user inputs an R
+                    //if (input.indexOf("R") != -1) {
+                        //// new buffered reader to read input from specified file
+                        //try {
+                            //BufferedReader fr = new BufferedReader(new FileReader("./" + input.substring(2)));
+                            //String line = "";
+                            //do {
+                                //// read next line from file
+                                //line = fr.readLine();
+                                //if (line != null) {
+                                    //// if line is not null, multicast as new unverified block to nodes
+                                    //counter++;
+                                    //new BlockchainNodeMulticast(line.toString(), originNode);
+                                //}
+                            //} while (line != null); // once you reach null line, youre done reading file
+                            //System.out.println(counter + " records have been added to unverified blocks.");
+                        //} catch (IOException ex) {
+                            //System.out.println("File not found.");
+                        //}
+                    //}
+                //} while (input.indexOf("quit") == -1);
+            //}
+            //// exception stuff
+        //} catch (Exception e) {
+            //System.out.println("interruped exception " + e);
+            //e.printStackTrace();
+        //}
+    //}
 
-}
+//}
 
 // class to handle multicast unverified blocks
 class UnverifiedBlockConsumer implements Runnable {
@@ -881,7 +961,7 @@ class UnverifiedBlockConsumer implements Runnable {
                 BlockchainBlock newBlock = (BlockchainBlock) unmarshaller.unmarshal(reader);
                 // clean up
                 reader.close();
-                
+
                 // TODO: verify signature on block
                 // store block signature
                 // remove signature from block (set to null)
@@ -892,7 +972,7 @@ class UnverifiedBlockConsumer implements Runnable {
                 if (newBlock.getRandomString() == null) {
                     // if null random string, this is a new block
                     // add to unverified queue
-                    System.out.println("received new unsolved block");
+                    System.out.println("Received new unverified block, blockId: " + newBlock.getBlockId());
                     // add to unverified queue
                     unverifiedQueue.add(newBlock);
                     // call solve method on new unverified block- to do work
