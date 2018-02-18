@@ -73,10 +73,10 @@ class Blockchain {
             // new buffered reader to read user input
             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
             // print instructions to user
-            System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify q to quit> ");
             int counter = 0;
             // wait for user input
             while (true) {
+                System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify q to quit> ");
                     // read next input from user
                     input = userInput.readLine();
                     // if user inputs an R
@@ -99,7 +99,7 @@ class Blockchain {
                             System.out.println("File not found.");
                         }
                     } else if (input.indexOf("L") == 0) {
-                        bc.printBlockchain();
+                        BlockchainNode.printBlockchain();
                     } else if (input.indexOf("V") == 0) {
                         System.out.println("verify blocks here");
                     } else if (input.indexOf("C") == 0) {
@@ -120,11 +120,10 @@ class Blockchain {
 
 class BlockchainNode {
     private int numProcesses = 3; // number of processes
-    //private UnverifiedBlockServer unverifiedBlockServer; // server to receive in new block
     private UnverifiedBlockConsumer unverifiedBlockConsumer; // consumer to do "work"
     private VerifiedBlockServer verifiedBlockServer; // verified block server, to manage verified blocks
     private PublicKeyStore publicKeyStore; // to store public keys
-    private Queue<BlockchainBlock> blockchainStack; // stack to store full blockchain
+    private static Stack<BlockchainBlock> blockchainStack; // stack to store full blockchain
     private KeyPair keyPair; // this blockchain node's public and private keys
     private int pid; // process id of this node
     private int verifiedBlockPort; // port number for this node's verified block server
@@ -136,7 +135,7 @@ class BlockchainNode {
         setPid(pid);
 
         // create blockchainStack to store blockchain
-        blockchainStack = new LinkedBlockingDeque<>();
+        blockchainStack = new Stack<>();
 
         // get port numbers
         setPorts();
@@ -166,7 +165,7 @@ class BlockchainNode {
         new BlockchainNodeMulticast(getPid(), getPublicKey());
     }
 
-    public void printBlockchain() {
+    public static void printBlockchain() {
         for (BlockchainBlock b : blockchainStack) {
             System.out.println(b.toString());
         }
@@ -182,10 +181,6 @@ class BlockchainNode {
         publicKeyStore = new PublicKeyStore(this.getPid(), this);
         // initialize thread
         new Thread(publicKeyStore).start();
-        // create new unverified block server
-        //unverifiedBlockServer = new UnverifiedBlockServer(pid, this);
-        //// initialize thread
-        //new Thread(unverifiedBlockServer).start();
         // create new unverified block consumer
         unverifiedBlockConsumer = new UnverifiedBlockConsumer(Ports.getInstance().getUnverifiedBlockPort(pid), this);
         // initialize thread
@@ -196,10 +191,10 @@ class BlockchainNode {
         new Thread(verifiedBlockServer).start();
     }
 
-    public void addBlockchainBlock(BlockchainBlock bcBlock) {
+    public static void addBlockchainBlock(BlockchainBlock bcBlock) {
         // method to add new block to this nodes copy of the blockchain block
         blockchainStack.add(bcBlock);
-        //System.out.println("BlockchainStack:" + blockchainStack.toString());
+        System.out.println("added to blockchain: " + bcBlock.toString());
     }
 
     public void exportBlockchainToFile() {
@@ -233,7 +228,7 @@ class BlockchainNode {
         // if there are blockchains in stack
         if (blockchainStack.size() > 0) {
             // return the the hash of it
-            return CalcHashHelper.calc(blockchainStack.poll());
+            return CalcHashHelper.calc(blockchainStack.peek());
         } else {
             // value we are looking to match in work hash with random string
             return String.valueOf(0b0000);
@@ -350,7 +345,7 @@ class CreateXml {
             // encode this in base64, and add to the block
             block.setSignedHash(Base64.getEncoder().encodeToString(signature));
             // helper println of signed hash
-            System.out.println("signed hash: " + block.getSignedHash());
+            //System.out.println("signed hash: " + block.getSignedHash());
 
             // re-marshall this new block, that includes signature
             JAXBContext jaxbContextFinal = JAXBContext.newInstance(BlockchainBlock.class);
@@ -751,23 +746,22 @@ class VerifiedBlockServer implements Runnable {
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
                 // create new blockchian block from unmarshalled received data
                 BlockchainBlock newBlock = (BlockchainBlock) unmarshaller.unmarshal(reader);
-
                 // clean up
                 reader.close();
 
-                // add to unverifiedBlockQueue
                 System.out.println("received new solved block, blockId: " + newBlock.getBlockId());
-                //System.out.println("newly verified blockchain block: " + newBlock.toString());
                 // block has been completed
                 // so remove from unverified queue
                 UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
                 // and add to new BlockchainBlcok
-                blockchainNode.addBlockchainBlock(newBlock);
+                BlockchainNode.addBlockchainBlock(newBlock);
 
                 // if we are process 0, write new blockchain to disk
                 if (blockchainNode.getPid() == 0) {
                     blockchainNode.exportBlockchainToFile();
                 }
+                // close socket when we are done
+                sock.close();
             } catch (Exception ex) {
                 // exception stuff
                 System.out.println("Verified bock worker exception: " + ex);
@@ -776,71 +770,6 @@ class VerifiedBlockServer implements Runnable {
         }
     }
 }
-
-//class UnverifiedBlockServer implements Runnable {
-    //// read input from user
-    //// read data in from text file
-    //// tell BlockchainNodeList class to multicast to everyone
-    //// UnverifiedBlockWorker does "work" on new block
-    //// once verified, UnverifiedBlockWorker tells BlockChainNodeList to multicast
-    //private int pid; // pid of calling process
-    //private BlockchainNode originNode; // calling process
-
-    //public UnverifiedBlockServer(int p, BlockchainNode blockchainNode) {
-        //pid = p; // set pid
-        //originNode = blockchainNode; // add calling blockchainNode to instance variable
-    //}
-
-    //public void run() {
-        ////run method
-        //// read data in from text file
-        //try {
-            //// string to hold user input
-            //String input = "";
-            //// string to hold file name
-            //String file = "";
-            //// wait 5sec, while system starts- its a hack, I know...
-            //Thread.sleep(5000);
-            //// new buffered reader to read user input
-            //BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
-            //// print instructions to user
-            //System.out.print("Enter R <filename> to read file, q to quit> ");
-            //int counter = 0;
-            //// wait for user input, I guess this really should be in main()
-            //while (true) {
-                //do {
-                    //// read next input from user
-                    //input = userInput.readLine();
-                    //// if user inputs an R
-                    //if (input.indexOf("R") != -1) {
-                        //// new buffered reader to read input from specified file
-                        //try {
-                            //BufferedReader fr = new BufferedReader(new FileReader("./" + input.substring(2)));
-                            //String line = "";
-                            //do {
-                                //// read next line from file
-                                //line = fr.readLine();
-                                //if (line != null) {
-                                    //// if line is not null, multicast as new unverified block to nodes
-                                    //counter++;
-                                    //new BlockchainNodeMulticast(line.toString(), originNode);
-                                //}
-                            //} while (line != null); // once you reach null line, youre done reading file
-                            //System.out.println(counter + " records have been added to unverified blocks.");
-                        //} catch (IOException ex) {
-                            //System.out.println("File not found.");
-                        //}
-                    //}
-                //} while (input.indexOf("quit") == -1);
-            //}
-            //// exception stuff
-        //} catch (Exception e) {
-            //System.out.println("interruped exception " + e);
-            //e.printStackTrace();
-        //}
-    //}
-
-//}
 
 // class to handle multicast unverified blocks
 class UnverifiedBlockConsumer implements Runnable {
@@ -877,7 +806,7 @@ class UnverifiedBlockConsumer implements Runnable {
     }
 
     // check if blockId is in unverified queue, return boolean
-    private boolean isUnverified(String blockId) {
+    public static boolean isUnverified(String blockId) {
         // new iterator to iterate through unverified blocks
         Iterator<BlockchainBlock> iter = unverifiedQueue.iterator();
         // while there is another unverified block in queue
@@ -967,7 +896,6 @@ class UnverifiedBlockConsumer implements Runnable {
                 // remove signature from block (set to null)
                 // new messagedigest
 
-
                 // add to unverifiedBlockQueue
                 if (newBlock.getRandomString() == null) {
                     // if null random string, this is a new block
@@ -976,7 +904,7 @@ class UnverifiedBlockConsumer implements Runnable {
                     // add to unverified queue
                     unverifiedQueue.add(newBlock);
                     // call solve method on new unverified block- to do work
-                    solve(newBlock);
+                    Solve.getInstance().solve(newBlock, blockchainNode);
                     return; // we're done here
                 }
             } catch (IOException ex) {
@@ -987,34 +915,56 @@ class UnverifiedBlockConsumer implements Runnable {
                 e.printStackTrace();
             }
         }
+        // print queue to screen
+        public void printQueue(){
+            System.out.println("PRINT QUEUE:");
+            System.out.println(unverifiedQueue.toString());
+        }
+    }
+}
 
-        // solve is a synchronized method, so only one thread can execute at a time
-        // i.e. cannot have two threads trying to solve different unverified blocks
-        private synchronized void solve(BlockchainBlock newBlock) {
-            String randomString; // random string to try and solve
-            Boolean unsolved = true; // boolean to tell while loop when to end
-            BlockchainBlock workerBlock = newBlock; // the new block we are solving
+class Solve {
+    private static Solve instance;
 
-            // add previous block ID to workerBlock
-            workerBlock.setPreviousBlockHash(blockchainNode.peekLastHash());
+    private Solve() {
+    }
 
-            while (unsolved) {
-                // generate random string to attempt to solve
-                randomString = new String(UUID.randomUUID().toString());
-                // add the random string to this block
-                workerBlock.setRandomString(randomString);
-                try {
-                    // check to make sure current block is not verified yet
-                    if (!isUnverified(workerBlock.getBlockId())) {
-                        // return if it is
-                        return;
-                    }
-                    // calculate hash on this block
-                    String hex = CalcHashHelper.calc(workerBlock);
-                    System.out.println("hex val: " + hex);
-                    // our work requirement:
-                    // we want the first hex value of the resulting hash to == 16 (F)
-                    if (hex.substring(0,1).equals("F")) {
+    public static Solve getInstance() {
+        if (instance == null) {
+            instance = new Solve();
+        }
+        return instance;
+    }
+
+    // solve is a synchronized method, so only one thread can execute at a time
+    // i.e. cannot have two threads trying to solve different unverified blocks
+    public synchronized void solve(BlockchainBlock newBlock, BlockchainNode blockchainNode) {
+        String randomString; // random string to try and solve
+        Boolean unsolved = true; // boolean to tell while loop when to end
+        BlockchainBlock workerBlock = newBlock; // the new block we are solving
+
+        // add previous block ID to workerBlock
+        workerBlock.setPreviousBlockHash(blockchainNode.peekLastHash());
+
+        while (unsolved) {
+            // generate random string to attempt to solve
+            randomString = new String(UUID.randomUUID().toString());
+            // add the random string to this block
+            workerBlock.setRandomString(randomString);
+            try {
+                // check to make sure current block is not verified yet
+                if (!UnverifiedBlockConsumer.isUnverified(workerBlock.getBlockId())) {
+                    // return if it is
+                    return;
+                }
+                // calculate hash on this block
+                String hex = CalcHashHelper.calc(workerBlock);
+                System.out.println("solving: " + workerBlock.getBlockId() + " hex val: " + hex);
+                // our work requirement:
+                // we want the first hex value of the resulting hash to == 16 (F)
+                if (hex.substring(0,1).equals("F")) {
+                    // make sure block has not been solved yet
+                    if (UnverifiedBlockConsumer.isUnverified(workerBlock.getBlockId())) {
                         // if it does, announce it to the world
                         System.out.println("time: " + System.currentTimeMillis() + "\nWINNER!");
                         // add this process id to the solved process id
@@ -1022,24 +972,18 @@ class UnverifiedBlockConsumer implements Runnable {
                         // and tell while loop to please stop
                         unsolved = false;
                     }
-                    // sleep for 2 seconds- we're just simulating more work here
-                    Thread.sleep(2000);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
                 }
-            }
-
-            // create new multicast to send to all BlockchainNodes
-            // this only gets sent *if* this process is the one who solved
-            if (!unsolved) {
-                new BlockchainNodeMulticast(workerBlock);
+                // sleep for 2 seconds- we're just simulating more work here
+                Thread.sleep(2000);
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         }
 
-        // print queue to screen
-        public void printQueue(){
-            System.out.println("PRINT QUEUE:");
-            System.out.println(unverifiedQueue.toString());
+        // create new multicast to send to all BlockchainNodes
+        // this only gets sent *if* this process is the one who solved
+        if (!unsolved) {
+            new BlockchainNodeMulticast(workerBlock);
         }
     }
 }

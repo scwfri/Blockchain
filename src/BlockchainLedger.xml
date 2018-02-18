@@ -1,52 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <blockchainBlock>
-    <blockId>31ccb268-27ab-45ec-b2aa-806bb25078c3</blockId>
-    <createTime>1518992015755</createTime>
-    <creatingProcessId>0</creatingProcessId>
-    <diagnosis> 1996.03.07</diagnosis>
-    <dob> Blow</dob>
-    <firstName>Joe</firstName>
-    <lastName> </lastName>
-    <prescription> Smallpox BedRest Whiskey</prescription>
-    <previousBlockHash>0</previousBlockHash>
-    <randomString>ce30f601-923f-4bd1-ab30-020ceb0a1997</randomString>
-    <signedHash>GqTR6kA8zPRWvCms+q5a/0bZaAPeX/oBv8UNcne/olVLinfNP7usMqBfPh+Dtp5bNFhodrNPKEvcuvCxSIFLe9ZPTVrGwS988SwqE2aSFfFoYssWAWWbIn3nkN+7JUOjHHrLLOoRwUvq5KYeuO+dBHwismgNMNxen5KIK5dFmNw=</signedHash>
-    <solvedProcessId>1</solvedProcessId>
-    <ssNum> </ssNum>
-    <treatment> 123-45-6888</treatment>
-</blockchainBlock>
-
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<blockchainBlock>
-    <blockId>767cd723-5dac-48ca-a0a9-3da37025f6bd</blockId>
-    <createTime>1518992015845</createTime>
-    <creatingProcessId>0</creatingProcessId>
-    <diagnosis> Measles</diagnosis>
-    <dob> 1942.07.07</dob>
-    <firstName>Wayne</firstName>
-    <lastName> Blaine</lastName>
-    <prescription> CodLiverOil</prescription>
-    <previousBlockHash>0</previousBlockHash>
-    <randomString>a010fe27-29ec-4be8-9d4d-62cc157d9eed</randomString>
-    <signedHash>GCMkXSZDgLRRnl5D5zpBH+RwKcEFNgC1ZlVH0DLKIFGLvNWdIJhX1V++wLasOozeDNwvPPEYKHwqS8zCeWU7j9p9cvgXmUMl5OKbw1YEZh0BOrI0yoyxXVDZ7kRydM3f6qZd5eIldL7CSUnAGDL4UYdn0v+mQDvhwS/0yvLiK3U=</signedHash>
-    <solvedProcessId>2</solvedProcessId>
-    <ssNum> 123-45-6777</ssNum>
-    <treatment> WaitToGetBetter</treatment>
-</blockchainBlock>
-
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<blockchainBlock>
-    <blockId>863e7326-5ebc-4002-822e-79074d331ba6</blockId>
-    <createTime>1518992015737</createTime>
-    <creatingProcessId>0</creatingProcessId>
+    <blockId>75c4169f-5ad1-4654-9521-623c316fc57c</blockId>
+    <createTime>1518994195760</createTime>
+    <creatingProcessId>1</creatingProcessId>
     <diagnosis> Chickenpox</diagnosis>
     <dob> 1996.03.07</dob>
     <firstName>John</firstName>
     <lastName> Smith</lastName>
     <prescription> aspirin</prescription>
     <previousBlockHash>0</previousBlockHash>
-    <randomString>c64f203b-ba55-4cec-8859-8def683dbeed</randomString>
-    <signedHash>fTCLi9OPNogZCoKYba4TcUEncYPI9PHSupoFpnqh3ICYoKVJMN89oWRqKLJ1kk8o43KZsxKvxaPi0ZCcLq6MmLQMfLLpJ1YBtabUrbOwrIX557ZIN44c/FMMC9r43nNE4RT+REc22DwaevXh+NG7xT3e7x6rQHffOJLP6J/0pwQ=</signedHash>
+    <randomString>5ad6221d-b665-4b6c-8741-e9465810052c</randomString>
+    <signedHash>fv4sZoSE9u+wvHG1CT/DkiSXtegMc5vDfAMxnZv5/zEHWidqSo7EZkIcTraY/CFz+FVSjyTiltO1j/md89kAjUuAIjQnnx0G4Vhk8SzVnuKU7FNf33aG4gREtutfxlgzlJEkbnW32q8qgcIDQ0AypxNkgxqOKHT3lEzOJStUuSI=</signedHash>
     <solvedProcessId>0</solvedProcessId>
     <ssNum> 123-45-6789</ssNum>
     <treatment> BedRest</treatment>
@@ -54,17 +18,35 @@
 
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <blockchainBlock>
-    <blockId>d3c80e51-e1de-469d-bf03-53c84d8c7eef</blockId>
-    <createTime>1518992015798</createTime>
-    <creatingProcessId>0</creatingProcessId>
+    <blockId>e08785d3-da32-4f54-b2de-9ea18bedb26f</blockId>
+    <createTime>1518994195857</createTime>
+    <creatingProcessId>1</creatingProcessId>
+    <diagnosis> Measles</diagnosis>
+    <dob> 1942.07.07</dob>
+    <firstName>Wayne</firstName>
+    <lastName> Blaine</lastName>
+    <prescription> CodLiverOil</prescription>
+    <previousBlockHash>0</previousBlockHash>
+    <randomString>893abc8a-1b9f-4659-bf7d-d2c54c70924a</randomString>
+    <signedHash>dhnl6sGY9j4gypNaXC2B5wE2rgvRBVEoAtrRCzj7hPsvSl9EncUvTfzcEIsVuhU0EoopY5AIm0CtCfJNMlg+STgBX73KhcYLf68XGpgQQJsywPkPOIoZs6Apl0TWMAomtlpEYCXyLoxpCS3a146UIdRbDyPE4OZINAepei2REGo=</signedHash>
+    <solvedProcessId>0</solvedProcessId>
+    <ssNum> 123-45-6777</ssNum>
+    <treatment> WaitToGetBetter</treatment>
+</blockchainBlock>
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<blockchainBlock>
+    <blockId>7e6d81c5-a1f7-47c1-b184-ac4d95b22201</blockId>
+    <createTime>1518994195821</createTime>
+    <creatingProcessId>1</creatingProcessId>
     <diagnosis> Insomnia</diagnosis>
     <dob> 1996.03.07</dob>
     <firstName>Julie</firstName>
     <lastName> Wilson</lastName>
     <prescription> HotPeppers</prescription>
-    <previousBlockHash>0</previousBlockHash>
-    <randomString>516ef3ca-fc6d-465a-afec-bd20e53f2eb5</randomString>
-    <signedHash>BXZQqrVCdPaFG/OfhvZvoI4FXAiNHrSobIz1zaCZyxmF4JahrNgBpMLkpM+Jjjd0/QZC+Lfw4KuesfzQtQd3pra8F9bsxIjB/WnyhFxCAPjqLWI1qrK0rt72Cl5aC6AVWVy4Q8UTkuICC22JAMSqcuuM9Ai25fsfK1uWqj8AHNA=</signedHash>
+    <previousBlockHash>FFB8DCBE979AEC1F46D7B0BBF3632A9998040E4DA99F5E4935BE5B6C6B614424</previousBlockHash>
+    <randomString>d9982b63-f94d-458e-adf9-c4495622a503</randomString>
+    <signedHash>b1mA3/Ni1aQ1fvSsNZ4TdYyyEDlKmttP6znPQ4oBKFyHbu528F5L14k9gwcV967lCCuI2JkVjcgOQswTKMuzkKdfflhqYxdstxP15CsIsspBFyYm3P9pPag7fmtZXa1L6nC+pBh6zlOj4Gq1EKMYmheMCjMMj17vD9FgqxOcKfI=</signedHash>
     <solvedProcessId>2</solvedProcessId>
     <ssNum> 123-45-6999</ssNum>
     <treatment> Exercise</treatment>
@@ -72,19 +54,19 @@
 
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <blockchainBlock>
-    <blockId>d3c80e51-e1de-469d-bf03-53c84d8c7eef</blockId>
-    <createTime>1518992015798</createTime>
-    <creatingProcessId>0</creatingProcessId>
-    <diagnosis> Insomnia</diagnosis>
-    <dob> 1996.03.07</dob>
-    <firstName>Julie</firstName>
-    <lastName> Wilson</lastName>
-    <prescription> HotPeppers</prescription>
-    <previousBlockHash>0</previousBlockHash>
-    <randomString>2a40c9dd-c2fd-4b5c-8eab-d160d9adc134</randomString>
-    <signedHash>BXZQqrVCdPaFG/OfhvZvoI4FXAiNHrSobIz1zaCZyxmF4JahrNgBpMLkpM+Jjjd0/QZC+Lfw4KuesfzQtQd3pra8F9bsxIjB/WnyhFxCAPjqLWI1qrK0rt72Cl5aC6AVWVy4Q8UTkuICC22JAMSqcuuM9Ai25fsfK1uWqj8AHNA=</signedHash>
-    <solvedProcessId>1</solvedProcessId>
-    <ssNum> 123-45-6999</ssNum>
-    <treatment> Exercise</treatment>
+    <blockId>50342e97-4ad7-41a8-96c4-75d6a67a7490</blockId>
+    <createTime>1518994195787</createTime>
+    <creatingProcessId>1</creatingProcessId>
+    <diagnosis> 1996.03.07</diagnosis>
+    <dob> Blow</dob>
+    <firstName>Joe</firstName>
+    <lastName> </lastName>
+    <prescription> Smallpox BedRest Whiskey</prescription>
+    <previousBlockHash>64B862858934B64C9537DD143FC49AC7138B00E1AA9CF25F1B66BB77C4F2CD0C</previousBlockHash>
+    <randomString>e88e1dff-de16-41a8-9f84-b19470d27565</randomString>
+    <signedHash>J7fnmWUwVdemMMchVyeGCiiTTHJrxMLq1wvC4gMngrIC5KXOLTwXxxsZZ8sgHQS4Fbia26CCiy/i4MsZVUKb8AS0sxsCv+p/XozJs4WJ5z/gacrqZ6U2FbsNgt5rOkguDMCCzxlkNAPzSvb0Owuapw5M3HBYK8C6BgW/OE8QOP8=</signedHash>
+    <solvedProcessId>2</solvedProcessId>
+    <ssNum> </ssNum>
+    <treatment> 123-45-6888</treatment>
 </blockchainBlock>
 
