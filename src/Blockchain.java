@@ -409,9 +409,10 @@ class PublicKeyStore implements Runnable {
                 pubKeyHashMap.put(pubKeyHash.getPid(), pubKeyHash.getPublicKey());
                 reader.close();
                 // TODO: send public key for this process, if this.pid not in hashmap
-                //if (pubKeyHash.getPid() == 2) {
-                    //System.out.println("this process pid not in keylist");
+                //if (pubKeyHash.getPid() != blockchainNode.getPid()) {
+                    //System.out.println("this process pid not in keylist. pid: " + pubKeyHash.getPid());
                     //new BlockchainNodeMulticast(blockchainNode.getPid(), blockchainNode.getPublicKey());
+            ////new BlockchainNodeMulticast(getPid(), keyPair.getPublic());
                 //}
             } catch (Exception ex) {
                 System.out.println("PublicKeyStoreWorker error: " + ex);
