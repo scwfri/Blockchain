@@ -80,7 +80,7 @@ class Blockchain {
             BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
             // print instructions to user
             int counter = 0;
-            System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify> ");
+            System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
             // wait for user input
             while (true) {
                 // read next input from user
@@ -106,17 +106,17 @@ class Blockchain {
                     }
                 } else if (input.indexOf("L") == 0) {
                     BlockchainNode.printBlockchain();
-                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify> ");
+                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
                 } else if (input.indexOf("V") == 0) {
-                    System.out.println("verify blocks here");
-                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify> ");
+                    BlockchainNode.verifyBlockchain();
+                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
                 } else if (input.indexOf("C") == 0) {
                     BlockchainNode.printCredit();
-                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify> ");
+                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
                 } else {
                     System.out.println("Command not recognized. Please try again.");
-                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify> ");
-                    }
+                    System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
+                }
             }
             // exception stuff
         } catch (Exception e) {
@@ -218,6 +218,24 @@ class BlockchainNode {
         // method to add new block to this nodes copy of the blockchain block
         blockchainStack.add(bcBlock);
         System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify> ");
+    }
+
+    public static void verifyBlockchain() {
+        boolean verified = true;
+        for (BlockchainBlock b : blockchainStack) {
+            String solvedPid = b.getSolvedProcessId();
+            b.setSolvedProcessId(null);
+            String hex = CalcHashHelper.calc(b);
+            if (!hex.substring(0,1).equals("F")) {
+                verified = false;
+            }
+            b.setSolvedProcessId(solvedPid);
+        }
+        if (verified) {
+            System.out.println("Blockchain verified!");
+        } else {
+            System.out.println("Error: Blockchain NOT verified!");
+        }
     }
 
     public void exportBlockchainToFile() {
@@ -596,11 +614,6 @@ class BlockchainNodeMulticast {
     }
 }
 
-// this class verifies the blockchain when called
-class VerifyBlockchain {
-    // TODO: verifies blockchain
-}
-
 // class to receive marshalled public key
 // reads in public key
 class PublicKeyStore implements Runnable {
@@ -773,80 +786,17 @@ class VerifiedBlockServer implements Runnable {
                 BlockchainBlock newBlock = (BlockchainBlock) unmarshaller.unmarshal(reader);
                 // clean up
                 reader.close();
+                System.out.println("received new solved block, blockId: " + newBlock.getBlockId());
+                // block has been completed
+                // so remove from unverified queue
+                UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
+                // and add to new BlockchainBlcok
+                BlockchainNode.addBlockchainBlock(newBlock);
 
-                // VERIFY BLOCK
-                // store block signature
-                byte[] sig = Base64.getDecoder().decode(newBlock.getSignedHash());
-                // store random string
-                String randString = newBlock.getRandomString();
-                // store id of process that solved block
-                String solveProcess = newBlock.getSolvedProcessId();
-                // store prev block id as well
-                String prevBlock = newBlock.getPreviousBlockHash();
-                // remove signature from block (set to null) in order to verify
-                newBlock.setSignedHash(null);
-                // remove random string from block (set to null) in order to verify
-                newBlock.setRandomString(null);
-                // remove solvedProcessId
-                newBlock.setSolvedProcessId(null);
-                // remove prevblockhash
-                newBlock.setPreviousBlockHash(null);
-
-                Marshaller marshaller = jaxbContext.createMarshaller();
-                // new StringWriter to use with marshalling process
-                StringWriter sw = new StringWriter();
-                // we want nice output on the marshalled data
-                marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-                marshaller.marshal(newBlock, sw);
-                // create messageDigest to get sha-256 digest of block (including signed hash == null)
-                try {
-                    // get message digest instance for SHA-256
-                    MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-                    // pull out ID of creating process to
-                    int creatingId = Integer.parseInt(newBlock.getCreatingProcessId());
-                    // add xml for new block to message digest
-                    messageDigest.update(sw.toString().getBytes());
-                    // new instance of X509 encoded key spec
-                    // this will allow us to convery byte[] into public key
-                    // source: https://stackoverflow.com/questions/35867880/convert-byte-array-back-to-public-key
-                    X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(PublicKeyStore.getPublicKey(creatingId));
-                    // new KeyFactory, we are using RSA
-                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                    // generate public key from byte[]
-                    PublicKey publicKey = keyFactory.generatePublic(pubKeySpec);
-                    // verify digital signature
-                    if (UnverifiedBlockConsumer.verifySig(messageDigest.digest(), publicKey, sig)) {
-                        // if true, signature verified.. so continue on our way
-                        System.out.println("Signature verified on new completed block.");
-                        // add signed hash back into block
-                        newBlock.setSignedHash(Base64.getEncoder().encodeToString(sig));
-                        // add random string back into block
-                        newBlock.setRandomString(randString);
-                        // add solved process id back in
-                        newBlock.setSolvedProcessId(solveProcess);
-                        // add prev block hash back
-                        System.out.println("prevBlock: " + prevBlock);
-                        newBlock.setPreviousBlockHash(Base64.getEncoder().encodeToString(prevBlock.getBytes()));
-                        System.out.println("received new solved block, blockId: " + newBlock.getBlockId());
-                        // block has been completed
-                        // so remove from unverified queue
-                        UnverifiedBlockConsumer.removeFromUnverifiedQueue(newBlock.getBlockId());
-                        // and add to new BlockchainBlcok
-                        BlockchainNode.addBlockchainBlock(newBlock);
-
-                        // if we are process 0, write new blockchain to disk
-                        if (blockchainNode.getPid() == 0) {
-                            blockchainNode.exportBlockchainToFile();
-                        }
-                    } else {
-                        // else someone tampered with the block, so ignore it
-                        System.out.println("Signature not verified on new Blockchain block. Ignoring.");
-                    }
-                } catch (Exception ex) {
-                    System.out.println("Error converting public key: " + ex);
-                    ex.printStackTrace();
+                // if we are process 0, write new blockchain to disk
+                if (blockchainNode.getPid() == 0) {
+                    blockchainNode.exportBlockchainToFile();
                 }
-
                 // close socket when we are done
                 sock.close();
             } catch (Exception ex) {
