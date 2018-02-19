@@ -113,10 +113,10 @@ class Blockchain {
                 } else if (input.indexOf("C") == 0) {
                     BlockchainNode.printCredit();
                     System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
-                } else {
+                } /*else {
                     System.out.println("Command not recognized. Please try again.");
                     System.out.print("Enter R <filename> to read file, L to list, C to get credit, V to verify>\n");
-                }
+                }*/
             }
             // exception stuff
         } catch (Exception e) {
