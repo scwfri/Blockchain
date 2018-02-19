@@ -333,8 +333,7 @@ class CreateXml {
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
 
             // null string and null signed SHA-256 show this is unverified block
-            // previousBlockHash is set in solve() method, set to null as precaution now
-            block.setPreviousBlockHash(null);
+            // previousBlockHash is set in solve() method
             // set randomString to null, to indicate unsolved
             block.setRandomString(null);
             // add create time
@@ -357,8 +356,6 @@ class CreateXml {
             // and set signed hash to null in received block
             // in order to verify properly
             block.setSignedHash(null);
-            // precaution to set solving process to null as well
-            block.setSolvedProcessId(null);
             // lets marshall this block, shall we?
             marshaller.marshal(block, sw);
             // create messageDigest to get sha-256 digest of block (including signed hash == null)
@@ -778,19 +775,11 @@ class VerifiedBlockServer implements Runnable {
                 // store block signature
                 byte[] sig = Base64.getDecoder().decode(newBlock.getSignedHash());
                 // store random string
-                String randString = newBlock.getRandomString();
-                // store id of process that solved block
-                String solveProcess = newBlock.getSolvedProcessId();
-                // store prev block id as well
-                String prevBlock = newBlock.getPreviousBlockHash();
+                String random = newBlock.getRandomString();
                 // remove signature from block (set to null) in order to verify
                 newBlock.setSignedHash(null);
-                // remove random string from block (set to null) in order to verify
+                //remore random string from block (set to null) in order to verify
                 newBlock.setRandomString(null);
-                // remove solvedProcessId
-                newBlock.setSolvedProcessId(null);
-                // remove prevblockhash
-                newBlock.setPreviousBlockHash(null);
 
                 Marshaller marshaller = jaxbContext.createMarshaller();
                 // new StringWriter to use with marshalling process
@@ -820,13 +809,7 @@ class VerifiedBlockServer implements Runnable {
                         System.out.println("Signature verified on new completed block.");
                         // add signed hash back into block
                         newBlock.setSignedHash(Base64.getEncoder().encodeToString(sig));
-                        // add random string back into block
-                        newBlock.setRandomString(randString);
-                        // add solved process id back in
-                        newBlock.setSolvedProcessId(solveProcess);
-                        // add prev block hash back
-                        System.out.println("prevBlock: " + prevBlock);
-                        newBlock.setPreviousBlockHash(Base64.getEncoder().encodeToString(prevBlock.getBytes()));
+                        newBlock.setRandomString(random);
                         System.out.println("received new solved block, blockId: " + newBlock.getBlockId());
                         // block has been completed
                         // so remove from unverified queue
@@ -838,9 +821,6 @@ class VerifiedBlockServer implements Runnable {
                         if (blockchainNode.getPid() == 0) {
                             blockchainNode.exportBlockchainToFile();
                         }
-                    } else {
-                        // else someone tampered with the block, so ignore it
-                        System.out.println("Signature not verified on new Blockchain block. Ignoring.");
                     }
                 } catch (Exception ex) {
                     System.out.println("Error converting public key: " + ex);
