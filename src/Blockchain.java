@@ -9,29 +9,6 @@
 *       quit to exit
 * Files needed to run:
 *   - Blockchain.java
-Note:
-    I am pretty sure i fixed the issue, but I was getting an exception when sending public
-    keys out every once in a while. I think it was an issue with the order everything
-    was starting in, so I tried to clean that up and have not seen an exception
-    in a while. If it does however rear its ugly head and decide not to
-    cooperate and throw an exception for you, please just kill it and restart
-    a couple times until the exception does not occur. Thanks.
-
-web sources:
- Reading lines and tokens from a file:
- http://www.fredosaurus.com/notes-java/data/strings/96string_examples/example_stringToArray.html
-
-XML validator:
-https://www.w3schools.com/xml/xml_validator.asp
-
-XML / Object conversion:
-https://www.mkyong.com/java/jaxb-hello-world-example
-http://www.java2s.com/Code/Java/Security/SignatureSignAndVerify.htm
-https://www.mkyong.com/java/java-digital-signatures-example/ (not so clear)
-https://javadigest.wordpress.com/2012/08/26/rsa-encryption-example/
-https://www.programcreek.com/java-api-examples/index.php?api=java.security.SecureRandom
-https://www.mkyong.com/java/java-sha-hashing-example/
-https://stackoverflow.com/questions/19818550/java-retrieve-the-actual-value-of-the-public-key-from-the-keypair-object
 /----------------------------------------------------------*/
 
 import java.util.*;
